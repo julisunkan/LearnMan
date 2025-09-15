@@ -17,15 +17,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Tutorial Platform Server"
+args = "Tutorial Platform"
 
 [[workflows.workflow]]
-name = "Tutorial Platform Server"
+name = "Tutorial Platform"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python main.py"
+args = "uv run python main.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
