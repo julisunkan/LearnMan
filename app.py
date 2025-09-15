@@ -36,7 +36,18 @@ def load_config():
             "site_description": "Interactive learning platform",
             "admin_passcode": "admin123",
             "max_file_size": 10485760,
-            "image_dimensions": {"width": 800, "height": 500}
+            "image_dimensions": {"width": 800, "height": 500},
+            "header_customization": {
+                "title_color": "#000000",
+                "title_size": "1.5rem",
+                "nav_text_color": "#000000", 
+                "nav_text_size": "1rem",
+                "background_gradient_start": "#ff006e",
+                "background_gradient_middle": "#00f5ff", 
+                "background_gradient_end": "#ffbe0b",
+                "show_emoji": True,
+                "custom_emoji": "✨"
+            }
         }
 
 def save_config(config):

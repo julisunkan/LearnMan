@@ -6,5 +6,16 @@
   "image_dimensions": {
     "width": 800,
     "height": 500
+  },
+  "header_customization": {
+    "title_color": "#000000",
+    "title_size": "1.5rem",
+    "nav_text_color": "#000000", 
+    "nav_text_size": "1rem",
+    "background_gradient_start": "#ff006e",
+    "background_gradient_middle": "#00f5ff", 
+    "background_gradient_end": "#ffbe0b",
+    "show_emoji": true,
+    "custom_emoji": "✨"
   }
 }
