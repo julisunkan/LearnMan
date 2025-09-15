@@ -281,12 +281,17 @@ def scrape_url():
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token', 'error')
+            return redirect(url_for('admin_login'))
+            
         passcode = request.form.get('passcode')
         config = load_config()
         
         if passcode == config.get('admin_passcode', 'admin123'):
             session['admin_authenticated'] = True
             session.permanent = True
+            session['csrf_token'] = str(uuid.uuid4())  # Regenerate token
             return redirect(url_for('admin_dashboard'))
         else:
             flash('Invalid passcode', 'error')
@@ -294,9 +299,14 @@ def admin_login():
     config = load_config()
     return render_template('admin/login.html', config=config)
 
-@app.route('/admin/logout')
+@app.route('/admin/logout', methods=['POST'])
 def admin_logout():
+    if not validate_csrf_token():
+        flash('Invalid CSRF token', 'error')
+        return redirect(url_for('admin_dashboard'))
+    
     session.pop('admin_authenticated', None)
+    session.pop('csrf_token', None)
     return redirect(url_for('index'))
 
 @app.route('/admin')
@@ -424,6 +434,126 @@ def admin_delete_module(module_id):
         pass
     
     return jsonify({'success': True})
+
+@app.route('/admin/config', methods=['POST'])
+@require_admin
+def admin_update_config():
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
+    data = request.get_json()
+    config = load_config()
+    
+    # Update configuration
+    for key, value in data.items():
+        if key in ['site_title', 'site_description', 'admin_passcode']:
+            config[key] = value
+    
+    save_config(config)
+    return jsonify({'success': True})
+
+@app.route('/admin/modules/reorder', methods=['POST'])
+@require_admin
+def admin_reorder_modules():
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
+    data = request.get_json()
+    module_order = data.get('module_order', [])
+    
+    courses_data = load_courses()
+    modules = courses_data.get('modules', [])
+    
+    # Reorder modules based on provided order
+    reordered_modules = []
+    for module_id in module_order:
+        for module in modules:
+            if module['id'] == module_id:
+                module['order'] = len(reordered_modules)
+                reordered_modules.append(module)
+                break
+    
+    courses_data['modules'] = reordered_modules
+    save_courses(courses_data)
+    
+    return jsonify({'success': True})
+
+@app.route('/admin/upload-image', methods=['POST'])
+@require_admin
+def admin_upload_image():
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image file'}), 400
+    
+    file = request.files['image']
+    if not file.filename or file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if file and file.filename and file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+        filename = secure_filename(file.filename)
+        filename = f"{uuid.uuid4()}_{filename}"
+        filepath = os.path.join('static/resources', filename)
+        
+        # Save and resize image
+        try:
+            image = Image.open(file.stream)
+            # Resize to 800x500 as specified
+            image = image.resize((800, 500), Image.Resampling.LANCZOS)
+            image.save(filepath)
+            
+            return jsonify({
+                'success': True,
+                'url': url_for('static', filename=f'resources/{filename}')
+            })
+        except Exception as e:
+            return jsonify({'error': f'Error processing image: {str(e)}'}), 500
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/admin/export')
+@require_admin
+def admin_export_data():
+    import zipfile
+    import io
+    
+    # Create ZIP file in memory
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        # Add configuration
+        zip_file.write('config.json', 'config.json')
+        
+        # Add data files
+        for data_file in ['data/courses.json', 'data/progress.json', 'data/feedback.json']:
+            if os.path.exists(data_file):
+                zip_file.write(data_file, data_file)
+        
+        # Add module content files
+        module_dir = 'data/modules'
+        if os.path.exists(module_dir):
+            for filename in os.listdir(module_dir):
+                filepath = os.path.join(module_dir, filename)
+                if os.path.isfile(filepath):
+                    zip_file.write(filepath, filepath)
+        
+        # Add static resources
+        resources_dir = 'static/resources'
+        if os.path.exists(resources_dir):
+            for filename in os.listdir(resources_dir):
+                filepath = os.path.join(resources_dir, filename)
+                if os.path.isfile(filepath):
+                    zip_file.write(filepath, filepath)
+    
+    zip_buffer.seek(0)
+    
+    return send_file(
+        io.BytesIO(zip_buffer.read()),
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=f'tutorial_platform_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip'
+    )
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

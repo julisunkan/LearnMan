@@ -17,6 +17,12 @@ class AdminPanel {
             urlImportForm.addEventListener('submit', this.handleUrlImport.bind(this));
         }
 
+        // Image upload form
+        const imageUploadForm = document.getElementById('imageUploadForm');
+        if (imageUploadForm) {
+            imageUploadForm.addEventListener('submit', this.handleImageUpload.bind(this));
+        }
+
         // Configuration form
         const configForm = document.getElementById('configForm');
         if (configForm) {
@@ -127,6 +133,38 @@ class AdminPanel {
         modal._element.addEventListener('hidden.bs.modal', function() {
             this.remove();
         });
+    }
+
+    async handleImageUpload(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            const response = await fetch('/admin/upload-image', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Show success message with image URL
+                alert(`Image uploaded successfully! URL: ${data.url}`);
+                
+                // Copy URL to clipboard
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(data.url);
+                    alert('Image URL copied to clipboard');
+                }
+                
+                // Reset form
+                e.target.reset();
+            } else {
+                alert('Error uploading image: ' + data.error);
+            }
+        } catch (error) {
+            alert('Error uploading image: ' + error.message);
+        }
     }
 
     async createModuleFromImport() {

@@ -93,6 +93,18 @@
                                 </div>
                                 <button type="submit" class="btn btn-primary">Import Content</button>
                             </form>
+                            
+                            <hr>
+                            
+                            <form id="imageUploadForm" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-3">
+                                    <label for="image_upload" class="form-label">Upload Image</label>
+                                    <input type="file" class="form-control" id="image_upload" name="image" accept="image/*">
+                                    <small class="text-muted">Images will be resized to 800x500px</small>
+                                </div>
+                                <button type="submit" class="btn btn-secondary">Upload Image</button>
+                            </form>
                         </div>
                     </div>
                 </div>
