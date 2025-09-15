@@ -105,9 +105,9 @@ def validate_csrf_token():
     form_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
     return token and token == form_token
 
-# URL validation for SSRF protection
+# Enhanced URL validation for SSRF protection
 def is_safe_url(url):
-    """Validate URL to prevent SSRF attacks"""
+    """Validate URL to prevent SSRF attacks with comprehensive IPv4/IPv6 checking"""
     try:
         parsed = urlparse(url)
         
@@ -119,27 +119,78 @@ def is_safe_url(url):
         if not parsed.hostname:
             return False, 'Invalid hostname'
         
-        # Resolve hostname to IP address
+        hostname = parsed.hostname.lower()
+        
+        # Block IP literals in URLs (both IPv4 and IPv6)
         try:
-            ip = socket.gethostbyname(parsed.hostname)
-            ip_obj = ipaddress.ip_address(ip)
+            ip_literal = ipaddress.ip_address(hostname)
+            return False, 'IP literal addresses are not allowed'
+        except ValueError:
+            # Not an IP literal, continue with hostname validation
+            pass
+        
+        # Block localhost and other dangerous hostnames
+        dangerous_hostnames = [
+            'localhost', '127.0.0.1', '::1',
+            'metadata.google.internal',
+            '169.254.169.254',  # AWS/GCP metadata
+            '100.100.100.200',  # Alibaba metadata
+            '192.0.0.192',      # Oracle metadata
+        ]
+        
+        if hostname in dangerous_hostnames:
+            return False, f'Hostname "{hostname}" is not allowed'
+        
+        # Resolve hostname to ALL IP addresses (both IPv4 and IPv6)
+        try:
+            # Get all address info for both IPv4 and IPv6
+            addr_info = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+            resolved_ips = [info[4][0] for info in addr_info]
+            
+            if not resolved_ips:
+                return False, 'Could not resolve hostname'
         except (socket.gaierror, ValueError):
             return False, 'Could not resolve hostname'
         
-        # Block private IP ranges
-        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
-            return False, 'Private, loopback, and link-local IPs are not allowed'
+        # Validate ALL resolved IP addresses
+        for ip_str in resolved_ips:
+            try:
+                ip_obj = ipaddress.ip_address(ip_str)
+                
+                # Block private IP ranges (both IPv4 and IPv6)
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+                    return False, f'Private, loopback, and link-local IPs are not allowed (resolved: {ip_str})'
+                
+                # Block reserved IP ranges
+                if ip_obj.is_reserved or ip_obj.is_multicast:
+                    return False, f'Reserved and multicast IPs are not allowed (resolved: {ip_str})'
+                
+                # Block cloud metadata endpoints and other dangerous IPs
+                dangerous_ips = [
+                    '169.254.169.254',  # AWS/GCP metadata
+                    '100.100.100.200',  # Alibaba metadata  
+                    '192.0.0.192',      # Oracle metadata
+                    '::1',              # IPv6 localhost
+                    'fd00:ec2::254',    # AWS IPv6 metadata
+                ]
+                
+                if str(ip_obj) in dangerous_ips:
+                    return False, f'Access to dangerous IP {ip_obj} is not allowed'
+                
+                # Additional IPv6 checks
+                if ip_obj.version == 6:
+                    # Block unique local addresses (fc00::/7)
+                    if ipaddress.IPv6Address(ip_str) in ipaddress.IPv6Network('fc00::/7'):
+                        return False, f'IPv6 unique local addresses are not allowed (resolved: {ip_str})'
+                    
+                    # Block site-local addresses (fec0::/10) - deprecated but still blocked
+                    if ipaddress.IPv6Address(ip_str) in ipaddress.IPv6Network('fec0::/10'):
+                        return False, f'IPv6 site-local addresses are not allowed (resolved: {ip_str})'
+                        
+            except ValueError:
+                return False, f'Invalid IP address resolved: {ip_str}'
         
-        # Block reserved IP ranges
-        if ip_obj.is_reserved or ip_obj.is_multicast:
-            return False, 'Reserved and multicast IPs are not allowed'
-        
-        # Block cloud metadata endpoints
-        metadata_ips = ['169.254.169.254', '100.100.100.200', '192.0.0.192']
-        if str(ip_obj) in metadata_ips:
-            return False, 'Access to cloud metadata endpoints is not allowed'
-        
-        # Block common internal service ports if accessing localhost-like domains
+        # Block common internal service ports
         dangerous_ports = [22, 23, 25, 53, 135, 139, 445, 993, 995, 1433, 3306, 3389, 5432, 5984, 6379, 8080, 9200, 27017]
         if parsed.port and parsed.port in dangerous_ports:
             return False, f'Access to port {parsed.port} is not allowed'
@@ -149,48 +200,88 @@ def is_safe_url(url):
     except Exception as e:
         return False, f'URL validation error: {str(e)}'
 
-def secure_fetch_url(url, timeout=10, max_size=5*1024*1024):
-    """Securely fetch URL content with size and timeout limits"""
+def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
+    """Securely fetch URL content with manual redirect handling and comprehensive SSRF protection"""
     try:
-        # Validate URL first
-        is_safe, message = is_safe_url(url)
-        if not is_safe:
-            raise ValueError(f'Unsafe URL: {message}')
+        visited_urls = set()
+        redirect_count = 0
+        current_url = url
         
-        # Make request with security headers and limits
-        headers = {
-            'User-Agent': 'Tutorial-Platform-Scraper/1.0',
-            'Accept': 'text/html,application/xhtml+xml,text/plain',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'DNT': '1',
-            'Connection': 'close'
-        }
+        while redirect_count <= max_redirects:
+            # Check for redirect loops
+            if current_url in visited_urls:
+                raise ValueError('Redirect loop detected')
+            visited_urls.add(current_url)
+            
+            # Validate current URL
+            is_safe, message = is_safe_url(current_url)
+            if not is_safe:
+                raise ValueError(f'Unsafe URL: {message}')
+            
+            # Make request with security headers and NO automatic redirects
+            headers = {
+                'User-Agent': 'Tutorial-Platform-Scraper/1.0',
+                'Accept': 'text/html,application/xhtml+xml,text/plain',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'DNT': '1',
+                'Connection': 'close'
+            }
+            
+            response = requests.get(
+                current_url,
+                headers=headers,
+                timeout=timeout,
+                allow_redirects=False,  # CRITICAL: Disable automatic redirects
+                stream=True,
+                verify=True
+            )
+            
+            # Handle redirects manually
+            if response.status_code in [301, 302, 303, 307, 308]:
+                if redirect_count >= max_redirects:
+                    raise ValueError(f'Too many redirects (max: {max_redirects})')
+                
+                location = response.headers.get('Location')
+                if not location:
+                    raise ValueError('Redirect response missing Location header')
+                
+                # Resolve relative URLs
+                if location.startswith('/'):
+                    from urllib.parse import urljoin
+                    current_url = urljoin(current_url, location)
+                elif not location.startswith(('http://', 'https://')):
+                    from urllib.parse import urljoin
+                    current_url = urljoin(current_url, location)
+                else:
+                    current_url = location
+                
+                # CRITICAL: Re-validate redirect target for SSRF protection
+                is_safe, safety_message = is_safe_url(current_url)
+                if not is_safe:
+                    raise ValueError(f'Redirect to unsafe URL blocked: {safety_message}')
+                
+                redirect_count += 1
+                continue
+            
+            # Not a redirect, process the response
+            response.raise_for_status()
+            
+            # Check response size before reading content
+            content_length = response.headers.get('content-length')
+            if content_length and int(content_length) > max_size:
+                raise ValueError(f'Content too large: {content_length} bytes (max: {max_size})')
+            
+            # Read content with size limit
+            content = b''
+            for chunk in response.iter_content(chunk_size=8192):
+                content += chunk
+                if len(content) > max_size:
+                    raise ValueError(f'Content too large (max: {max_size} bytes)')
+            
+            # Return the final content
+            return content.decode('utf-8', errors='replace')
         
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=timeout,
-            allow_redirects=True,
-            stream=True,
-            verify=True  # Verify SSL certificates
-        )
-        
-        # Check response size
-        content_length = response.headers.get('content-length')
-        if content_length and int(content_length) > max_size:
-            raise ValueError(f'Content too large: {content_length} bytes (max: {max_size})')
-        
-        # Read content with size limit
-        content = b''
-        for chunk in response.iter_content(chunk_size=8192):
-            content += chunk
-            if len(content) > max_size:
-                raise ValueError(f'Content too large (max: {max_size} bytes)')
-        
-        response._content = content
-        response.raise_for_status()
-        
-        return response.text
+        raise ValueError(f'Too many redirects (max: {max_redirects})')
         
     except requests.exceptions.Timeout:
         raise ValueError('Request timeout')
@@ -200,6 +291,10 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024):
         raise ValueError('Connection error')
     except requests.exceptions.HTTPError as e:
         raise ValueError(f'HTTP error: {e.response.status_code}')
+    except requests.exceptions.TooManyRedirects:
+        raise ValueError('Too many redirects')
+    except UnicodeDecodeError:
+        raise ValueError('Unable to decode response content')
     except Exception as e:
         raise ValueError(f'Request failed: {str(e)}')
 
