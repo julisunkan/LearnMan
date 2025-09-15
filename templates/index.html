@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
-        <h1>Welcome to {{ config.site_title if config else "Tutorial Platform" }}</h1>
-        <p class="lead">{{ config.site_description if config else "Interactive learning platform" }}</p>
+    <div class="col-12 text-center mb-4">
+        <h1 style="font-weight: 800; font-size: 2rem; color: var(--primary-color); margin-bottom: 0.5rem;">Welcome to {{ config.site_title if config else "Tutorial Platform" }}</h1>
+        <p class="lead" style="color: var(--secondary-color); font-size: 1.1rem;">{{ config.site_description if config else "Interactive learning platform" }}</p>
     </div>
 </div>
 

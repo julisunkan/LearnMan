@@ -17,7 +17,7 @@ from werkzeug.utils import secure_filename
 from openai import OpenAI
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key-change-in-production')
+app.secret_key = os.environ.get("SESSION_SECRET")
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # Initialize OpenAI client if API key is available
@@ -182,6 +182,11 @@ def quiz_submit():
         'total': total_questions,
         'passed': passed
     })
+
+@app.route('/sw.js')
+def service_worker():
+    """Serve the service worker from root scope for PWA installability"""
+    return app.send_static_file('sw.js'), 200, {'Content-Type': 'application/javascript'}
 
 @app.route('/certificate/<module_id>')
 def generate_certificate(module_id):
