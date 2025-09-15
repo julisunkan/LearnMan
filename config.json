@@ -1,0 +1,10 @@
+{
+  "site_title": "Tutorial Platform",
+  "site_description": "Interactive learning platform",
+  "admin_passcode": "admin123",
+  "max_file_size": 10485760,
+  "image_dimensions": {
+    "width": 800,
+    "height": 500
+  }
+}
