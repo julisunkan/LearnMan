@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tutorial-platform-v6';
+const CACHE_NAME = 'tutorial-platform-v7';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
