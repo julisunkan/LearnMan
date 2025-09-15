@@ -28,6 +28,12 @@ class AdminPanel {
         if (configForm) {
             configForm.addEventListener('submit', this.handleConfigUpdate.bind(this));
         }
+
+        // Header customization form
+        const headerCustomizationForm = document.getElementById('headerCustomizationForm');
+        if (headerCustomizationForm) {
+            headerCustomizationForm.addEventListener('submit', this.handleHeaderCustomizationUpdate.bind(this));
+        }
     }
 
     initializeSortable() {
@@ -217,6 +223,51 @@ class AdminPanel {
             }
         } catch (error) {
             alert('Error updating configuration: ' + error.message);
+        }
+    }
+
+    async handleHeaderCustomizationUpdate(e) {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        // Convert form data to JSON with proper handling for checkboxes
+        const headerCustomization = {};
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'csrf_token') {
+                if (key === 'show_emoji') {
+                    headerCustomization[key] = true; // Checkbox checked
+                } else if (value.trim() !== '') {
+                    headerCustomization[key] = value;
+                }
+            }
+        }
+        
+        // If show_emoji checkbox is not in formData, it means it's unchecked
+        if (!formData.has('show_emoji')) {
+            headerCustomization['show_emoji'] = false;
+        }
+
+        const config = {
+            header_customization: headerCustomization
+        };
+
+        try {
+            const response = await fetch('/admin/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': this.getCSRFToken()
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (response.ok) {
+                alert('Header customization updated successfully! Please refresh the page to see changes.');
+            } else {
+                alert('Error updating header customization');
+            }
+        } catch (error) {
+            alert('Error updating header customization: ' + error.message);
         }
     }
 

@@ -473,10 +473,51 @@ def admin_update_config():
     data = request.get_json()
     config = load_config()
     
-    # Update configuration
+    # Update basic configuration
     for key, value in data.items():
         if key in ['site_title', 'site_description', 'admin_passcode']:
             config[key] = value
+    
+    # Update header customization with validation
+    if 'header_customization' in data:
+        if 'header_customization' not in config:
+            config['header_customization'] = {}
+        
+        header_data = data['header_customization']
+        
+        # Validate and sanitize header values
+        validated_header = {}
+        
+        # Color validation (hex colors only)
+        import re
+        hex_color_pattern = r'^#[0-9A-Fa-f]{6}$'
+        for color_key in ['title_color', 'nav_text_color', 'background_gradient_start', 'background_gradient_middle', 'background_gradient_end']:
+            if color_key in header_data:
+                color_value = str(header_data[color_key])
+                if re.match(hex_color_pattern, color_value):
+                    validated_header[color_key] = color_value
+        
+        # Size validation (rem units only)
+        size_pattern = r'^\d+(\.\d+)?rem$'
+        for size_key in ['title_size', 'nav_text_size']:
+            if size_key in header_data:
+                size_value = str(header_data[size_key])
+                if re.match(size_pattern, size_value):
+                    validated_header[size_key] = size_value
+        
+        # Boolean validation
+        if 'show_emoji' in header_data:
+            validated_header['show_emoji'] = bool(header_data['show_emoji'])
+        
+        # Emoji validation (limited length and basic sanitization)
+        if 'custom_emoji' in header_data:
+            emoji_value = str(header_data['custom_emoji'])
+            # Limit to 4 characters and strip any HTML/script-like content
+            if len(emoji_value) <= 4 and not any(char in emoji_value for char in ['<', '>', '"', "'", '&']):
+                validated_header['custom_emoji'] = emoji_value
+        
+        # Update config with validated values only
+        config['header_customization'].update(validated_header)
     
     save_config(config)
     return jsonify({'success': True})

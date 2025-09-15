@@ -26,12 +26,51 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Dynamic Header Styling -->
+    {% if config.header_customization %}
+    <style>
+        :root {
+            --navbar-title-color: {{ config.header_customization.title_color or '#000000' }};
+            --navbar-title-size: {{ config.header_customization.title_size or '1.5rem' }};
+            --navbar-nav-color: {{ config.header_customization.nav_text_color or '#000000' }};
+            --navbar-nav-size: {{ config.header_customization.nav_text_size or '1rem' }};
+            --navbar-bg-start: {{ config.header_customization.background_gradient_start or '#ff006e' }};
+            --navbar-bg-middle: {{ config.header_customization.background_gradient_middle or '#00f5ff' }};
+            --navbar-bg-end: {{ config.header_customization.background_gradient_end or '#ffbe0b' }};
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--navbar-bg-start) 0%, var(--navbar-bg-middle) 50%, var(--navbar-bg-end) 100%) !important;
+        }
+        
+        .navbar-brand {
+            color: var(--navbar-title-color) !important;
+            font-size: var(--navbar-title-size) !important;
+        }
+        
+        .nav-link {
+            color: var(--navbar-nav-color) !important;
+            font-size: var(--navbar-nav-size) !important;
+        }
+        
+        .nav-link:hover {
+            color: var(--navbar-nav-color) !important;
+        }
+    </style>
+    {% endif %}
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('index') }}">{{ config.site_title if config else "Tutorial Platform" }}</a>
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                {{ config.site_title if config else "Tutorial Platform" }}
+                {% if config.header_customization and config.header_customization.show_emoji %}
+                    {{ config.header_customization.custom_emoji or '✨' }}
+                {% endif %}
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>

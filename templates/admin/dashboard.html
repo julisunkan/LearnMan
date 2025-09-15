@@ -58,22 +58,127 @@
         
         <div class="tab-pane fade" id="config">
             <h3>Site Configuration</h3>
-            <form id="configForm">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="mb-3">
-                    <label for="site_title" class="form-label">Site Title</label>
-                    <input type="text" class="form-control" id="site_title" name="site_title" value="{{ config.site_title }}">
+            
+            <!-- Basic Configuration -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Basic Settings</h5>
                 </div>
-                <div class="mb-3">
-                    <label for="site_description" class="form-label">Site Description</label>
-                    <textarea class="form-control" id="site_description" name="site_description" rows="3">{{ config.site_description }}</textarea>
+                <div class="card-body">
+                    <form id="configForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="site_title" class="form-label">Site Title</label>
+                            <input type="text" class="form-control" id="site_title" name="site_title" value="{{ config.site_title }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="site_description" class="form-label">Site Description</label>
+                            <textarea class="form-control" id="site_description" name="site_description" rows="3">{{ config.site_description }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="admin_passcode" class="form-label">Admin Passcode</label>
+                            <input type="password" class="form-control" id="admin_passcode" name="admin_passcode" placeholder="Leave blank to keep current">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Basic Configuration</button>
+                    </form>
                 </div>
-                <div class="mb-3">
-                    <label for="admin_passcode" class="form-label">Admin Passcode</label>
-                    <input type="password" class="form-control" id="admin_passcode" name="admin_passcode" placeholder="Leave blank to keep current">
+            </div>
+            
+            <!-- Header Customization -->
+            <div class="card">
+                <div class="card-header">
+                    <h5>Header Customization</h5>
                 </div>
-                <button type="submit" class="btn btn-primary">Save Configuration</button>
-            </form>
+                <div class="card-body">
+                    <form id="headerCustomizationForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Title Styling</h6>
+                                <div class="mb-3">
+                                    <label for="title_color" class="form-label">Title Text Color</label>
+                                    <input type="color" class="form-control form-control-color" id="title_color" name="title_color" value="{{ config.header_customization.title_color if config.header_customization else '#000000' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="title_size" class="form-label">Title Text Size</label>
+                                    <select class="form-control" id="title_size" name="title_size">
+                                        <option value="1rem" {% if config.header_customization and config.header_customization.title_size == '1rem' %}selected{% endif %}>Small (1rem)</option>
+                                        <option value="1.25rem" {% if config.header_customization and config.header_customization.title_size == '1.25rem' %}selected{% endif %}>Medium (1.25rem)</option>
+                                        <option value="1.5rem" {% if not config.header_customization or config.header_customization.title_size == '1.5rem' %}selected{% endif %}>Large (1.5rem)</option>
+                                        <option value="1.75rem" {% if config.header_customization and config.header_customization.title_size == '1.75rem' %}selected{% endif %}>Extra Large (1.75rem)</option>
+                                        <option value="2rem" {% if config.header_customization and config.header_customization.title_size == '2rem' %}selected{% endif %}>Huge (2rem)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Navigation Styling</h6>
+                                <div class="mb-3">
+                                    <label for="nav_text_color" class="form-label">Navigation Text Color</label>
+                                    <input type="color" class="form-control form-control-color" id="nav_text_color" name="nav_text_color" value="{{ config.header_customization.nav_text_color if config.header_customization else '#000000' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="nav_text_size" class="form-label">Navigation Text Size</label>
+                                    <select class="form-control" id="nav_text_size" name="nav_text_size">
+                                        <option value="0.875rem" {% if config.header_customization and config.header_customization.nav_text_size == '0.875rem' %}selected{% endif %}>Small (0.875rem)</option>
+                                        <option value="1rem" {% if not config.header_customization or config.header_customization.nav_text_size == '1rem' %}selected{% endif %}>Medium (1rem)</option>
+                                        <option value="1.125rem" {% if config.header_customization and config.header_customization.nav_text_size == '1.125rem' %}selected{% endif %}>Large (1.125rem)</option>
+                                        <option value="1.25rem" {% if config.header_customization and config.header_customization.nav_text_size == '1.25rem' %}selected{% endif %}>Extra Large (1.25rem)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h6>Background Colors</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="background_gradient_start" class="form-label">Gradient Start Color</label>
+                                    <input type="color" class="form-control form-control-color" id="background_gradient_start" name="background_gradient_start" value="{{ config.header_customization.background_gradient_start if config.header_customization else '#ff006e' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="background_gradient_middle" class="form-label">Gradient Middle Color</label>
+                                    <input type="color" class="form-control form-control-color" id="background_gradient_middle" name="background_gradient_middle" value="{{ config.header_customization.background_gradient_middle if config.header_customization else '#00f5ff' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="background_gradient_end" class="form-label">Gradient End Color</label>
+                                    <input type="color" class="form-control form-control-color" id="background_gradient_end" name="background_gradient_end" value="{{ config.header_customization.background_gradient_end if config.header_customization else '#ffbe0b' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h6>Emoji Settings</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="show_emoji" name="show_emoji" {% if not config.header_customization or config.header_customization.show_emoji %}checked{% endif %}>
+                                        <label class="form-check-label" for="show_emoji">
+                                            Show Emoji in Title
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="custom_emoji" class="form-label">Custom Emoji</label>
+                                    <input type="text" class="form-control" id="custom_emoji" name="custom_emoji" value="{{ config.header_customization.custom_emoji if config.header_customization else '✨' }}" maxlength="5" placeholder="✨">
+                                    <small class="text-muted">Enter emoji or leave empty for default</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">Save Header Customization</button>
+                    </form>
+                </div>
+            </div>
         </div>
         
         <div class="tab-pane fade" id="import">
