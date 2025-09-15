@@ -1,0 +1,165 @@
+Create a comprehensive Flask-based tutorial platform with the following specifications:
+
+Core Requirements
+Backend Framework: Flask with single-file architecture
+
+Session management with required SESSION_SECRET environment variable
+File-based JSON storage (no database required)
+Static file serving for videos, images, and resources
+PDF certificate generation using ReportLab
+Frontend Architecture:
+
+Jinja2 templates with Bootstrap 5 responsive design
+Vanilla JavaScript (main.js for user features, admin.js for admin panel)
+Progressive Web App (PWA) capabilities with service worker
+Mobile-first responsive design with modern CSS variables
+Authentication & Security
+User Access: No authentication required for learners
+Admin Access: Passcode-based protection at /admin endpoint
+
+CSRF protection for all admin operations
+Secure session management
+Input validation and sanitization
+SSRF protection for URL imports
+Core Features
+Learning Management:
+
+Course modules with video content (HTML5 player)
+Rich HTML content rendering with Markdown support
+Interactive quiz system (multiple choice, true/false)
+Progress tracking using localStorage (no user accounts)
+Certificate generation upon course completion
+Bookmark system for favorite modules
+Note-taking functionality per module
+Search and filter capabilities
+Content Management (Admin Panel):
+
+WYSIWYG content editor using CKEditor 5
+Drag-and-drop module reordering with SortableJS
+Image upload and automatic resizing to 800x500px with responsive display
+Video URL integration for external MP4 files
+Quiz creation with rich text questions
+Resource file management (PDFs, ZIPs, etc.)
+Advanced Features
+Web Scraping & AI Integration:
+
+URL content import with automatic text extraction
+Image downloading and local storage
+NLP-based quiz generation from imported content
+Content sanitization and security validation
+PWA Capabilities:
+
+Service worker for offline functionality
+Manifest file for installable app experience
+Icon generation (192x192, 512x512, regular & maskable)
+Cache management and versioning
+Import/Export System:
+
+ZIP-based course backup and restore
+Bulk content operations
+Module content file management
+Technical Specifications
+File Structure:
+
+/
+├── app.py (main Flask application)
+├── main.py (entry point)
+├── config.json (site configuration)
+├── data/
+│   ├── courses.json (module data)
+│   ├── progress.json (user progress)
+│   ├── feedback.json (user feedback)
+│   └── modules/ (HTML content files)
+├── static/
+│   ├── css/style.css (mobile-first responsive design)
+│   ├── js/ (main.js, admin.js)
+│   ├── resources/ (uploaded files)
+│   ├── pwa-icons/ (PWA icons)
+│   └── sw.js (service worker)
+└── templates/ (Jinja2 templates)
+Dependencies:
+
+Flask, Werkzeug (core framework)
+ReportLab (PDF generation)
+Pillow (image processing)
+Markdown (content rendering)
+BeautifulSoup4, trafilatura (web scraping)
+Bleach (HTML sanitization)
+User Interface Design
+Student Interface:
+
+Modern card-based module layout with gradient backgrounds
+Progress bars and completion tracking
+Responsive video player
+Interactive quiz interface with immediate feedback
+Note-taking sidebar
+Keyboard navigation (arrow keys, spacebar)
+Search functionality with live filtering
+Admin Interface:
+
+Tabbed dashboard (Modules, Config, Import/Export, etc.)
+Modal-based editing with CKEditor 5 integration
+Live preview functionality
+Drag-and-drop interface for reordering
+Real-time configuration preview
+Cache management tools
+Responsive Design System
+CSS Architecture:
+
+CSS custom properties for theming
+Mobile-first approach with breakpoints
+Card-based components with shadows and transitions
+Gradient backgrounds for visual appeal
+Smooth animations and hover effects
+Mobile Optimization:
+
+Touch-friendly interface
+Swipe gestures support
+Optimized image loading
+PWA installation prompts
+Data Management
+Storage Strategy:
+
+JSON files for configuration and course data
+LocalStorage for user progress and preferences
+Static file serving for media content
+Automatic image optimization and cropping
+Security Measures:
+
+CSRF token validation
+Input sanitization with Bleach
+Path traversal protection
+SSRF prevention for URL imports
+Secure session handling
+Integration Features
+Content Import:
+
+Web scraping with trafilatura
+Automatic image downloading and optimization
+AI-powered quiz generation
+Content sanitization and formatting
+Export Capabilities:
+
+ZIP archive generation
+Course backup and restore
+Resource bundling
+Development Considerations
+Performance:
+
+Image optimization and responsive loading
+Service worker caching strategy
+Lazy loading for content
+Efficient JavaScript bundling
+Accessibility:
+
+ARIA labels and semantic HTML
+Keyboard navigation support
+High contrast mode compatibility
+Screen reader optimization
+Deployment:
+
+Configured for Replit hosting
+Environment variable management
+Production-ready security settings
+HTTPS enforcement
+This comprehensive prompt covers all aspects of the tutorial platform, from basic functionality to advanced features like PWA capabilities, content import, and AI-powered quiz generation. The platform is designed to be self-contained, secure, and user-friendly while providing powerful administrative tools for content management.
