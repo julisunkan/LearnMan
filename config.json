@@ -12,10 +12,10 @@
     "title_size": "1.25rem",
     "nav_text_color": "#000000",
     "nav_text_size": "1rem",
-    "background_gradient_start": "#25da28",
+    "background_gradient_start": "#ebebeb",
     "background_gradient_middle": "#0bc5cb",
-    "background_gradient_end": "#ffbe0b",
-    "show_emoji": true,
+    "background_gradient_end": "#66ccc5",
+    "show_emoji": false,
     "custom_emoji": "\u2728"
   }
 }

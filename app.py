@@ -158,7 +158,14 @@ def quiz(module_id):
 
 @app.route('/api/quiz-submit', methods=['POST'])
 def quiz_submit():
+    # CSRF protection for quiz submissions
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+        
     module_id = data.get('module_id')
     answers = data.get('answers', {})
     
