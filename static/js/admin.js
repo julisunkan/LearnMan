@@ -324,6 +324,22 @@ class AdminPanel {
             this.updateNavbarBrandStructure(config.site_title, currentEmoji);
         }
         
+        // Update homepage header title (looks for "Welcome to [title]")
+        if (config.site_title) {
+            const homepageHeader = document.querySelector('h1');
+            if (homepageHeader && homepageHeader.textContent.includes('Welcome to')) {
+                homepageHeader.textContent = `Welcome to ${config.site_title}`;
+            }
+        }
+        
+        // Update homepage description (looks for the lead paragraph after the main header)
+        if (config.site_description) {
+            const homepageDescription = document.querySelector('p.lead');
+            if (homepageDescription) {
+                homepageDescription.textContent = config.site_description;
+            }
+        }
+        
         // Update page title
         if (config.site_title) {
             document.title = config.site_title;
