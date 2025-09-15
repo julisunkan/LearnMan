@@ -217,6 +217,8 @@ class AdminPanel {
             });
 
             if (response.ok) {
+                // Update UI immediately without page refresh
+                this.updateBasicConfigUI(config);
                 alert('Configuration updated successfully');
             } else {
                 alert('Error updating configuration');
@@ -262,7 +264,9 @@ class AdminPanel {
             });
 
             if (response.ok) {
-                alert('Header customization updated successfully! Please refresh the page to see changes.');
+                // Update UI immediately without page refresh
+                this.updateHeaderCustomizationUI(headerCustomization);
+                alert('Header customization updated successfully!');
             } else {
                 alert('Error updating header customization');
             }
@@ -298,6 +302,70 @@ class AdminPanel {
     getCSRFToken() {
         return document.querySelector('input[name="csrf_token"]')?.value || 
                document.querySelector('meta[name="csrf-token"]')?.content || '';
+    }
+
+    updateBasicConfigUI(config) {
+        // Update site title in navbar
+        const navbarBrand = document.querySelector('.navbar-brand');
+        if (navbarBrand && config.site_title) {
+            // Extract emoji part if it exists
+            const emojiRegex = /(\s+[^\w\s]+\s*)$/;
+            const currentText = navbarBrand.textContent;
+            const emojiMatch = currentText.match(emojiRegex);
+            const emojiPart = emojiMatch ? emojiMatch[0] : '';
+            
+            navbarBrand.childNodes[0].textContent = config.site_title + (emojiPart ? '' : ' ');
+        }
+        
+        // Update page title
+        if (config.site_title) {
+            document.title = config.site_title;
+        }
+    }
+
+    updateHeaderCustomizationUI(headerCustomization) {
+        // Get the root element to update CSS variables
+        const root = document.documentElement;
+        
+        // Update CSS variables for colors and sizes
+        if (headerCustomization.title_color) {
+            root.style.setProperty('--navbar-title-color', headerCustomization.title_color);
+        }
+        if (headerCustomization.title_size) {
+            root.style.setProperty('--navbar-title-size', headerCustomization.title_size);
+        }
+        if (headerCustomization.nav_text_color) {
+            root.style.setProperty('--navbar-nav-color', headerCustomization.nav_text_color);
+        }
+        if (headerCustomization.nav_text_size) {
+            root.style.setProperty('--navbar-nav-size', headerCustomization.nav_text_size);
+        }
+        if (headerCustomization.background_gradient_start) {
+            root.style.setProperty('--navbar-bg-start', headerCustomization.background_gradient_start);
+        }
+        if (headerCustomization.background_gradient_middle) {
+            root.style.setProperty('--navbar-bg-middle', headerCustomization.background_gradient_middle);
+        }
+        if (headerCustomization.background_gradient_end) {
+            root.style.setProperty('--navbar-bg-end', headerCustomization.background_gradient_end);
+        }
+        
+        // Update emoji display in navbar
+        const navbarBrand = document.querySelector('.navbar-brand');
+        if (navbarBrand) {
+            const emojiRegex = /(\s+[^\w\s]+\s*)$/;
+            const currentText = navbarBrand.textContent;
+            const titlePart = currentText.replace(emojiRegex, '').trim();
+            
+            if (headerCustomization.show_emoji !== undefined) {
+                if (headerCustomization.show_emoji) {
+                    const emoji = headerCustomization.custom_emoji || '✨';
+                    navbarBrand.innerHTML = titlePart + ' ' + emoji;
+                } else {
+                    navbarBrand.innerHTML = titlePart;
+                }
+            }
+        }
     }
 
     escapeHtml(text) {

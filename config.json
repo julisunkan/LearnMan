@@ -1,6 +1,6 @@
 {
-  "site_title": "Ethical hacking",
-  "site_description": "Ethical",
+  "site_title": "Ethical hacking with Python",
+  "site_description": "Ethical hacking with Python",
   "admin_passcode": "admin123",
   "max_file_size": 10485760,
   "image_dimensions": {
@@ -9,13 +9,13 @@
   },
   "header_customization": {
     "title_color": "#000000",
-    "title_size": "1.5rem",
-    "nav_text_color": "#000000", 
+    "title_size": "1.25rem",
+    "nav_text_color": "#000000",
     "nav_text_size": "1rem",
-    "background_gradient_start": "#ff006e",
-    "background_gradient_middle": "#00f5ff", 
+    "background_gradient_start": "#25da28",
+    "background_gradient_middle": "#0bc5cb",
     "background_gradient_end": "#ffbe0b",
     "show_emoji": true,
-    "custom_emoji": "✨"
+    "custom_emoji": "\u2728"
   }
 }
