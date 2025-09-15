@@ -1,19 +1,21 @@
 /* Mobile-first app design with CSS custom properties */
 :root {
-  --primary-color: #007bff;
-  --secondary-color: #6c757d;
-  --success-color: #28a745;
-  --danger-color: #dc3545;
-  --warning-color: #ffc107;
-  --info-color: #17a2b8;
-  --light-color: #f8f9fa;
-  --dark-color: #343a40;
+  --primary-color: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary-color: #10b981;
+  --accent-color: #f59e0b;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+  --info-color: #06b6d4;
+  --light-color: #f8fafc;
+  --dark-color: #1e293b;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   --border-radius: 16px;
   --box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --app-background: #f5f5f5;
-  --navbar-height: 60px;
+  --app-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --navbar-height: 70px;
 }
 
 * {
@@ -33,34 +35,78 @@ body {
   overflow-x: hidden;
 }
 
-/* App-like navigation */
+/* Mobile-style colorful navigation */
 .navbar {
   height: var(--navbar-height);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  border-bottom: 1px solid rgba(0,0,0,0.1);
-  background: white !important;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 50%, var(--secondary-color) 100%) !important;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+  border: none;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.navbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  pointer-events: none;
 }
 
 .navbar-brand {
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--primary-color) !important;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: white !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 2;
+}
+
+.navbar-brand::after {
+  content: '✨';
+  margin-left: 0.5rem;
+  font-size: 1.2rem;
 }
 
 .nav-link {
-  font-weight: 500;
-  color: var(--dark-color) !important;
-  border-radius: var(--border-radius);
-  padding: 0.5rem 1rem !important;
-  margin: 0 0.25rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9) !important;
+  border-radius: 25px;
+  padding: 0.6rem 1.2rem !important;
+  margin: 0 0.3rem;
   transition: var(--transition);
+  position: relative;
+  z-index: 2;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .nav-link:hover {
-  background: rgba(0, 123, 255, 0.1);
-  color: var(--primary-color) !important;
+  background: rgba(255,255,255,0.25);
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.navbar-toggler {
+  border: none;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 12px;
+}
+
+.navbar-toggler:focus {
+  box-shadow: none;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 /* Main container adjustments */
