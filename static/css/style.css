@@ -302,3 +302,152 @@ body {
 .modal-footer {
   border-top: 2px solid #e9ecef;
 }
+
+/* Module content grid system - uniform image sizing and alignment */
+.module-content {
+  --content-gap: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--content-gap);
+  row-gap: 1rem;
+  line-height: 1.6;
+}
+
+/* Default content spans full width */
+.module-content > * {
+  grid-column: 1 / -1;
+}
+
+/* Uniform image blocks - all images same size and alignment */
+.module-content figure.image,
+.module-content img:not(figure img) {
+  grid-column: 1 / -1;
+  margin: 1.5rem 0;
+  aspect-ratio: 16 / 9; /* Consistent aspect ratio for all images */
+  overflow: hidden;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+}
+
+.module-content figure.image:hover {
+  box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+/* Force all images to fill their containers uniformly */
+.module-content figure.image img,
+.module-content img:not(figure img) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  object-position: center;
+  max-width: none !important;
+  border-radius: var(--border-radius);
+}
+
+/* Neutralize CKEditor inline sizing and float styles */
+.module-content figure.image[style],
+.module-content img[style] {
+  width: 100% !important;
+  height: 100% !important;
+  float: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Remove CKEditor alignment classes that break grid */
+.module-content .image-style-side,
+.module-content .image_resized,
+.module-content .image-style-align-left,
+.module-content .image-style-align-right,
+.module-content .image-style-align-center {
+  float: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  text-align: left !important;
+}
+
+/* Image captions styling */
+.module-content figure.image figcaption {
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+  background: rgba(0,0,0,0.05);
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  margin-top: -var(--border-radius);
+  font-style: italic;
+}
+
+/* Optional grid span utilities for future variants */
+.module-content .img-span-12 { grid-column: span 12; }
+.module-content .img-span-8 { grid-column: span 8; }
+.module-content .img-span-6 { grid-column: span 6; }
+.module-content .img-span-4 { grid-column: span 4; }
+
+/* Text content formatting within grid */
+.module-content p,
+.module-content h1,
+.module-content h2,
+.module-content h3,
+.module-content h4,
+.module-content h5,
+.module-content h6 {
+  grid-column: 1 / -1;
+  margin-bottom: 1rem;
+}
+
+.module-content ul,
+.module-content ol {
+  grid-column: 1 / -1;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.module-content blockquote {
+  grid-column: 1 / -1;
+  border-left: 4px solid var(--primary-color);
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: var(--secondary-color);
+}
+
+.module-content table {
+  grid-column: 1 / -1;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  box-shadow: var(--box-shadow);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.module-content table th,
+.module-content table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+  text-align: left;
+}
+
+.module-content table th {
+  background: var(--light-color);
+  font-weight: 600;
+}
+
+/* Mobile responsiveness - all images full width */
+@media (max-width: 768px) {
+  .module-content {
+    --content-gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+  
+  .module-content [class^="img-span-"] {
+    grid-column: 1 / -1;
+  }
+  
+  .module-content figure.image,
+  .module-content img:not(figure img) {
+    margin: 1rem 0;
+    aspect-ratio: 4 / 3; /* Slightly taller aspect ratio for mobile */
+  }
+}
