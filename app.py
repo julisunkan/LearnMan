@@ -481,36 +481,92 @@ def admin_reorder_modules():
 @app.route('/admin/upload-image', methods=['POST'])
 @require_admin
 def admin_upload_image():
-    if not validate_csrf_token():
+    # Check if request is from CKEditor (different field name and CSRF handling)
+    is_ckeditor = 'upload' in request.files
+    
+    if not is_ckeditor and not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
     
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image file'}), 400
+    # Handle different field names for different upload sources
+    file_field = 'upload' if is_ckeditor else 'image'
     
-    file = request.files['image']
+    if file_field not in request.files:
+        error_response = {'error': {'message': 'No image file'}} if is_ckeditor else {'error': 'No image file'}
+        return jsonify(error_response), 400
+    
+    file = request.files[file_field]
     if not file.filename or file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
+        error_response = {'error': {'message': 'No file selected'}} if is_ckeditor else {'error': 'No file selected'}
+        return jsonify(error_response), 400
     
-    if file and file.filename and file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+    if file and file.filename and file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
         filename = secure_filename(file.filename)
         filename = f"{uuid.uuid4()}_{filename}"
         filepath = os.path.join('static/resources', filename)
         
-        # Save and resize image
+        # Get crop and resize parameters
+        crop_mode = request.form.get('crop_mode', 'smart')  # smart, center, square
+        max_width = int(request.form.get('max_width', 800))
+        max_height = int(request.form.get('max_height', 600))
+        
         try:
             image = Image.open(file.stream)
-            # Resize to 800x500 as specified
-            image = image.resize((800, 500), Image.Resampling.LANCZOS)
-            image.save(filepath)
             
-            return jsonify({
-                'success': True,
-                'url': url_for('static', filename=f'resources/{filename}')
-            })
+            # Apply cropping based on mode
+            if crop_mode == 'square':
+                # Crop to square aspect ratio
+                min_dimension = min(image.width, image.height)
+                left = (image.width - min_dimension) // 2
+                top = (image.height - min_dimension) // 2
+                right = left + min_dimension
+                bottom = top + min_dimension
+                image = image.crop((left, top, right, bottom))
+            elif crop_mode == 'center':
+                # Crop to center with target aspect ratio
+                target_ratio = max_width / max_height
+                current_ratio = image.width / image.height
+                
+                if current_ratio > target_ratio:
+                    # Image is wider, crop width
+                    new_width = int(image.height * target_ratio)
+                    left = (image.width - new_width) // 2
+                    image = image.crop((left, 0, left + new_width, image.height))
+                elif current_ratio < target_ratio:
+                    # Image is taller, crop height
+                    new_height = int(image.width / target_ratio)
+                    top = (image.height - new_height) // 2
+                    image = image.crop((0, top, image.width, top + new_height))
+            
+            # Resize while maintaining aspect ratio if needed
+            if image.width > max_width or image.height > max_height:
+                image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            
+            # Convert to RGB if needed (for JPEG)
+            if image.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', image.size, (255, 255, 255))
+                if image.mode == 'P':
+                    image = image.convert('RGBA')
+                background.paste(image, mask=image.split()[-1] if 'A' in image.mode else None)
+                image = background
+            
+            image.save(filepath, 'JPEG', quality=85, optimize=True)
+            
+            image_url = url_for('static', filename=f'resources/{filename}')
+            
+            # Return different response format for CKEditor vs regular upload
+            if is_ckeditor:
+                return jsonify({'url': image_url})
+            else:
+                return jsonify({
+                    'success': True,
+                    'url': image_url
+                })
         except Exception as e:
-            return jsonify({'error': f'Error processing image: {str(e)}'}), 500
+            error_response = {'error': {'message': f'Error processing image: {str(e)}'}} if is_ckeditor else {'error': f'Error processing image: {str(e)}'}
+            return jsonify(error_response), 500
     
-    return jsonify({'error': 'Invalid file type'}), 400
+    error_response = {'error': {'message': 'Invalid file type'}} if is_ckeditor else {'error': 'Invalid file type'}
+    return jsonify(error_response), 400
 
 @app.route('/admin/export')
 @require_admin

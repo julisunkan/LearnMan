@@ -1,3 +1,12 @@
 {
-  "modules": []
+  "modules": [
+    {
+      "id": "11b5eeec-eceb-4b90-b3e6-dfa1a447f6ef",
+      "title": "A Detailed Guide on PassTheCert",
+      "description": "Pass-the-Certificate is a highly effective Kerberos privilege escalation method that bypasses traditional password-based authentication.",
+      "video_url": "",
+      "created_at": "2025-09-15T11:51:32.703782",
+      "order": 0
+    }
+  ]
 }
