@@ -1,8 +1,12 @@
 import os
 import json
 import uuid
+import ipaddress
+import socket
 from datetime import datetime
 from functools import wraps
+from urllib.parse import urlparse
+import requests
 from PIL import Image
 import markdown
 import trafilatura
@@ -100,6 +104,104 @@ def validate_csrf_token():
     token = session.get('csrf_token')
     form_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
     return token and token == form_token
+
+# URL validation for SSRF protection
+def is_safe_url(url):
+    """Validate URL to prevent SSRF attacks"""
+    try:
+        parsed = urlparse(url)
+        
+        # Only allow HTTP and HTTPS schemes
+        if parsed.scheme not in ['http', 'https']:
+            return False, 'Only HTTP and HTTPS schemes are allowed'
+        
+        # Ensure hostname is present
+        if not parsed.hostname:
+            return False, 'Invalid hostname'
+        
+        # Resolve hostname to IP address
+        try:
+            ip = socket.gethostbyname(parsed.hostname)
+            ip_obj = ipaddress.ip_address(ip)
+        except (socket.gaierror, ValueError):
+            return False, 'Could not resolve hostname'
+        
+        # Block private IP ranges
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+            return False, 'Private, loopback, and link-local IPs are not allowed'
+        
+        # Block reserved IP ranges
+        if ip_obj.is_reserved or ip_obj.is_multicast:
+            return False, 'Reserved and multicast IPs are not allowed'
+        
+        # Block cloud metadata endpoints
+        metadata_ips = ['169.254.169.254', '100.100.100.200', '192.0.0.192']
+        if str(ip_obj) in metadata_ips:
+            return False, 'Access to cloud metadata endpoints is not allowed'
+        
+        # Block common internal service ports if accessing localhost-like domains
+        dangerous_ports = [22, 23, 25, 53, 135, 139, 445, 993, 995, 1433, 3306, 3389, 5432, 5984, 6379, 8080, 9200, 27017]
+        if parsed.port and parsed.port in dangerous_ports:
+            return False, f'Access to port {parsed.port} is not allowed'
+        
+        return True, 'URL is safe'
+        
+    except Exception as e:
+        return False, f'URL validation error: {str(e)}'
+
+def secure_fetch_url(url, timeout=10, max_size=5*1024*1024):
+    """Securely fetch URL content with size and timeout limits"""
+    try:
+        # Validate URL first
+        is_safe, message = is_safe_url(url)
+        if not is_safe:
+            raise ValueError(f'Unsafe URL: {message}')
+        
+        # Make request with security headers and limits
+        headers = {
+            'User-Agent': 'Tutorial-Platform-Scraper/1.0',
+            'Accept': 'text/html,application/xhtml+xml,text/plain',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'DNT': '1',
+            'Connection': 'close'
+        }
+        
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=timeout,
+            allow_redirects=True,
+            stream=True,
+            verify=True  # Verify SSL certificates
+        )
+        
+        # Check response size
+        content_length = response.headers.get('content-length')
+        if content_length and int(content_length) > max_size:
+            raise ValueError(f'Content too large: {content_length} bytes (max: {max_size})')
+        
+        # Read content with size limit
+        content = b''
+        for chunk in response.iter_content(chunk_size=8192):
+            content += chunk
+            if len(content) > max_size:
+                raise ValueError(f'Content too large (max: {max_size} bytes)')
+        
+        response._content = content
+        response.raise_for_status()
+        
+        return response.text
+        
+    except requests.exceptions.Timeout:
+        raise ValueError('Request timeout')
+    except requests.exceptions.SSLError:
+        raise ValueError('SSL certificate verification failed')
+    except requests.exceptions.ConnectionError:
+        raise ValueError('Connection error')
+    except requests.exceptions.HTTPError as e:
+        raise ValueError(f'HTTP error: {e.response.status_code}')
+    except Exception as e:
+        raise ValueError(f'Request failed: {str(e)}')
 
 # Routes
 @app.route('/')
@@ -262,28 +364,46 @@ def generate_certificate(module_id):
     return send_file(filepath, as_attachment=True, download_name=filename)
 
 @app.route('/api/scrape-url', methods=['POST'])
+@require_admin
 def scrape_url():
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
     
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+        
     url = data.get('url')
     
     if not url:
         return jsonify({'error': 'URL is required'}), 400
     
+    # Validate and sanitize URL
+    url = str(url).strip()
+    if len(url) > 2048:  # Reasonable URL length limit
+        return jsonify({'error': 'URL too long'}), 400
+    
     try:
+        # Securely fetch URL content
+        html_content = secure_fetch_url(url, timeout=10, max_size=5*1024*1024)
+        
         # Extract text content using trafilatura
-        downloaded = trafilatura.fetch_url(url)
-        text = trafilatura.extract(downloaded)
+        text = trafilatura.extract(html_content)
         
         if not text:
             return jsonify({'error': 'Could not extract content from URL'}), 400
+        
+        # Limit extracted text size
+        if len(text) > 50000:  # 50KB text limit
+            text = text[:50000] + '... [truncated]'
         
         # Generate quiz questions using OpenAI if available
         quiz_questions = []
         if openai_client:
             try:
+                # Limit content sent to OpenAI
+                content_for_ai = text[:2000] if len(text) > 2000 else text
+                
                 response = openai_client.chat.completions.create(
                     model="gpt-5",
                     messages=[
@@ -291,27 +411,33 @@ def scrape_url():
                             "role": "system",
                             "content": "Generate 3-5 multiple choice quiz questions based on the provided text content. Respond with JSON in this format: {'questions': [{'question': 'Question text', 'options': ['A', 'B', 'C', 'D'], 'correct_answer': 0, 'type': 'multiple_choice'}]}"
                         },
-                        {"role": "user", "content": f"Generate quiz questions for this content:\n\n{text[:2000]}"}
+                        {"role": "user", "content": f"Generate quiz questions for this content:\n\n{content_for_ai}"}
                     ],
                     response_format={"type": "json_object"}
                 )
                 
-                content = response.choices[0].message.content
-                if content:
-                    quiz_data = json.loads(content)
+                ai_content = response.choices[0].message.content
+                if ai_content:
+                    quiz_data = json.loads(ai_content)
                 else:
                     quiz_data = {}
                 quiz_questions = quiz_data.get('questions', [])
             except Exception as e:
                 print(f"Error generating quiz questions: {e}")
+                # Don't fail the entire request if AI generation fails
         
         return jsonify({
             'content': text,
             'quiz_questions': quiz_questions
         })
         
+    except ValueError as e:
+        # These are our custom validation errors
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Log the error but don't expose internal details
+        print(f"Scraping error: {e}")
+        return jsonify({'error': 'Failed to process URL'}), 500
 
 # Admin routes
 @app.route('/admin/login', methods=['GET', 'POST'])
