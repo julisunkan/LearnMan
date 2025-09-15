@@ -308,13 +308,20 @@ class AdminPanel {
         // Update site title in navbar
         const navbarBrand = document.querySelector('.navbar-brand');
         if (navbarBrand && config.site_title) {
-            // Extract emoji part if it exists
-            const emojiRegex = /(\s+[^\w\s]+\s*)$/;
-            const currentText = navbarBrand.textContent;
-            const emojiMatch = currentText.match(emojiRegex);
-            const emojiPart = emojiMatch ? emojiMatch[0] : '';
+            // Get current emoji from structured elements or extract from existing text
+            let currentEmoji = '';
+            const emojiElement = navbarBrand.querySelector('.navbar-emoji');
+            if (emojiElement) {
+                currentEmoji = emojiElement.textContent.trim();
+            } else {
+                // Fallback: Extract emoji from end of current text
+                const currentText = navbarBrand.textContent;
+                const emojiMatch = currentText.match(/\s*([^\w\s\-_.,!?()[\]{}]+)\s*$/);
+                currentEmoji = emojiMatch ? emojiMatch[1] : '';
+            }
             
-            navbarBrand.childNodes[0].textContent = config.site_title + (emojiPart ? '' : ' ');
+            // Create structured content with separate title and emoji elements
+            this.updateNavbarBrandStructure(config.site_title, currentEmoji);
         }
         
         // Update page title
@@ -350,22 +357,69 @@ class AdminPanel {
             root.style.setProperty('--navbar-bg-end', headerCustomization.background_gradient_end);
         }
         
-        // Update emoji display in navbar
+        // Update emoji display in navbar - SECURITY FIX: Use textContent instead of innerHTML
         const navbarBrand = document.querySelector('.navbar-brand');
         if (navbarBrand) {
-            const emojiRegex = /(\s+[^\w\s]+\s*)$/;
-            const currentText = navbarBrand.textContent;
-            const titlePart = currentText.replace(emojiRegex, '').trim();
+            // Get current title from structured elements or extract from existing text
+            let currentTitle = '';
+            const titleElement = navbarBrand.querySelector('.navbar-title');
+            if (titleElement) {
+                currentTitle = titleElement.textContent.trim();
+            } else {
+                // Fallback: Extract title by removing emoji from end
+                const currentText = navbarBrand.textContent;
+                currentTitle = currentText.replace(/\s*[^\w\s\-_.,!?()[\]{}]+\s*$/, '').trim();
+            }
             
             if (headerCustomization.show_emoji !== undefined) {
                 if (headerCustomization.show_emoji) {
-                    const emoji = headerCustomization.custom_emoji || '✨';
-                    navbarBrand.innerHTML = titlePart + ' ' + emoji;
+                    // Sanitize emoji input - only allow safe characters
+                    const emoji = this.sanitizeEmoji(headerCustomization.custom_emoji || '✨');
+                    this.updateNavbarBrandStructure(currentTitle, emoji);
                 } else {
-                    navbarBrand.innerHTML = titlePart;
+                    this.updateNavbarBrandStructure(currentTitle, '');
                 }
             }
         }
+    }
+
+    updateNavbarBrandStructure(title, emoji) {
+        const navbarBrand = document.querySelector('.navbar-brand');
+        if (!navbarBrand) return;
+        
+        // Clear existing content and create structured elements
+        navbarBrand.innerHTML = '';
+        
+        // Add title element
+        const titleElement = document.createElement('span');
+        titleElement.className = 'navbar-title';
+        titleElement.textContent = title || 'Tutorial Platform';
+        navbarBrand.appendChild(titleElement);
+        
+        // Add emoji element if emoji is provided
+        if (emoji && emoji.trim()) {
+            const emojiElement = document.createElement('span');
+            emojiElement.className = 'navbar-emoji';
+            emojiElement.textContent = ' ' + emoji.trim();
+            navbarBrand.appendChild(emojiElement);
+        }
+    }
+    
+    sanitizeEmoji(emoji) {
+        if (!emoji || typeof emoji !== 'string') {
+            return '✨'; // Default fallback emoji
+        }
+        
+        // Remove any potentially dangerous HTML/script content
+        // Only allow Unicode emoji and common symbol characters
+        const sanitized = emoji.trim().replace(/[<>&"'`]/g, '');
+        
+        // Limit length to prevent abuse
+        const maxLength = 10;
+        const truncated = sanitized.substring(0, maxLength);
+        
+        // If no valid characters remain, use default
+        return truncated || '✨';
     }
 
     escapeHtml(text) {
