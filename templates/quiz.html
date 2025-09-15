@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('module_detail', module_id=module.id) }}">{{ module.title }}</a></li>
+                <li class="breadcrumb-item active">Quiz</li>
+            </ol>
+        </nav>
+        
+        <div class="quiz-container">
+            <h1>{{ module.title }} - Quiz</h1>
+            <p class="lead">{{ module.quiz.description if module.quiz.description else "Test your knowledge of this module." }}</p>
+            
+            {% if module.quiz.passing_score %}
+                <div class="alert alert-info">
+                    <strong>Passing Score:</strong> {{ module.quiz.passing_score }}%
+                </div>
+            {% endif %}
+            
+            <form id="quizForm">
+                {% for question in module.quiz.questions %}
+                    <div class="quiz-question">
+                        <h5>Question {{ loop.index }}</h5>
+                        <p>{{ question.question }}</p>
+                        
+                        {% if question.type == 'multiple_choice' %}
+                            <ul class="quiz-options">
+                                {% for option in question.options %}
+                                    <li>
+                                        <label>
+                                            <input type="radio" name="{{ loop.index0 }}" value="{{ loop.index0 }}" required>
+                                            {{ option }}
+                                        </label>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% elif question.type == 'true_false' %}
+                            <ul class="quiz-options">
+                                <li>
+                                    <label>
+                                        <input type="radio" name="{{ loop.index0 }}" value="true" required>
+                                        True
+                                    </label>
+                                </li>
+                                <li>
+                                    <label>
+                                        <input type="radio" name="{{ loop.index0 }}" value="false" required>
+                                        False
+                                    </label>
+                                </li>
+                            </ul>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                
+                <div class="text-center mt-4">
+                    <button type="button" class="btn btn-primary btn-lg" onclick="submitQuiz('{{ module.id }}')">Submit Quiz</button>
+                </div>
+            </form>
+            
+            <div id="quizResults" class="mt-4"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

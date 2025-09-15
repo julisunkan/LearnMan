@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<script src="https://cdn.ckeditor.com/ckeditor5/35.4.0/classic/ckeditor.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                <li class="breadcrumb-item active">{{ action }} Module</li>
+            </ol>
+        </nav>
+        
+        <h1>{{ action }} Module</h1>
+        
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="mb-3">
+                <label for="title" class="form-label">Module Title</label>
+                <input type="text" class="form-control" id="title" name="title" value="{{ module.title if module else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ module.description if module else '' }}</textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="video_url" class="form-label">Video URL (MP4)</label>
+                <input type="url" class="form-control" id="video_url" name="video_url" value="{{ module.video_url if module else '' }}" placeholder="https://example.com/video.mp4">
+            </div>
+            
+            <div class="mb-3">
+                <label for="content" class="form-label">Module Content</label>
+                <textarea id="content" name="content">{{ module.content if module else '' }}</textarea>
+            </div>
+            
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">{{ action }} Module</button>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card sticky-top">
+            <div class="card-header">
+                <h5>Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="contentPreview">
+                    <p class="text-muted">Content preview will appear here as you type.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let editor;
+    
+    ClassicEditor
+        .create(document.querySelector('#content'), {
+            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'blockQuote', 'insertTable', 'undo', 'redo']
+        })
+        .then(newEditor => {
+            editor = newEditor;
+            
+            // Update preview on content change
+            editor.model.document.on('change:data', () => {
+                const data = editor.getData();
+                document.getElementById('contentPreview').innerHTML = data || '<p class="text-muted">Content preview will appear here as you type.</p>';
+            });
+            
+            // Initial preview
+            const initialContent = editor.getData();
+            if (initialContent) {
+                document.getElementById('contentPreview').innerHTML = initialContent;
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
+</script>
+{% endblock %}

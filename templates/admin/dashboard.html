@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h1>Admin Dashboard</h1>
+    
+    <ul class="nav nav-tabs admin-tabs" id="adminTabs">
+        <li class="nav-item">
+            <a class="nav-link active" id="modules-tab" data-bs-toggle="tab" href="#modules">Modules</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="config-tab" data-bs-toggle="tab" href="#config">Configuration</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="import-tab" data-bs-toggle="tab" href="#import">Import/Export</a>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="adminTabsContent">
+        <div class="tab-pane fade show active" id="modules">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Manage Modules</h3>
+                <a href="{{ url_for('admin_new_module') }}" class="btn btn-primary">Add New Module</a>
+            </div>
+            
+            {% if courses.modules %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Description</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modulesList">
+                            {% for module in courses.modules %}
+                                <tr data-module-id="{{ module.id }}">
+                                    <td>{{ module.title }}</td>
+                                    <td>{{ module.description[:50] }}{% if module.description|length > 50 %}...{% endif %}</td>
+                                    <td>{{ module.created_at[:10] if module.created_at else 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('admin_edit_module', module_id=module.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteModule('{{ module.id }}')">Delete</button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p>No modules created yet.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="tab-pane fade" id="config">
+            <h3>Site Configuration</h3>
+            <form id="configForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="site_title" class="form-label">Site Title</label>
+                    <input type="text" class="form-control" id="site_title" name="site_title" value="{{ config.site_title }}">
+                </div>
+                <div class="mb-3">
+                    <label for="site_description" class="form-label">Site Description</label>
+                    <textarea class="form-control" id="site_description" name="site_description" rows="3">{{ config.site_description }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="admin_passcode" class="form-label">Admin Passcode</label>
+                    <input type="password" class="form-control" id="admin_passcode" name="admin_passcode" placeholder="Leave blank to keep current">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Configuration</button>
+            </form>
+        </div>
+        
+        <div class="tab-pane fade" id="import">
+            <h3>Import/Export</h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Import Content</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="urlImportForm">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-3">
+                                    <label for="import_url" class="form-label">Import from URL</label>
+                                    <input type="url" class="form-control" id="import_url" name="import_url" placeholder="https://example.com/article">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Import Content</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Export Data</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>Export all modules and configuration as a ZIP file.</p>
+                            <button class="btn btn-success" onclick="exportData()">Export All Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

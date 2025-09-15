@@ -1,0 +1,304 @@
+/* Mobile-first responsive design with CSS custom properties */
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --border-radius: 8px;
+  --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  line-height: 1.6;
+  color: var(--dark-color);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+/* Card-based module layout with gradient backgrounds */
+.module-card {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.module-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+}
+
+.module-card .card-body {
+  padding: 1.5rem;
+}
+
+.module-card .card-title {
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.module-card .btn-primary {
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.3);
+  color: white;
+  transition: var(--transition);
+}
+
+.module-card .btn-primary:hover {
+  background: rgba(255,255,255,0.3);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.module-card .btn-outline-secondary {
+  border-color: rgba(255,255,255,0.5);
+  color: white;
+}
+
+.module-card .btn-outline-secondary:hover {
+  background: rgba(255,255,255,0.2);
+  border-color: white;
+  color: white;
+}
+
+/* Progress bars and completion tracking */
+.progress {
+  height: 8px;
+  border-radius: 4px;
+  background-color: rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, var(--success-color) 0%, #20c997 100%);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+/* Interactive quiz interface */
+.quiz-container {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: var(--box-shadow);
+  margin-bottom: 2rem;
+}
+
+.quiz-question {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--light-color);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
+}
+
+.quiz-options {
+  list-style: none;
+  padding: 0;
+}
+
+.quiz-options li {
+  margin-bottom: 0.5rem;
+}
+
+.quiz-options input[type="radio"] {
+  margin-right: 0.5rem;
+}
+
+.quiz-options label {
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: var(--transition);
+  display: block;
+}
+
+.quiz-options label:hover {
+  background: rgba(0,123,255,0.1);
+}
+
+/* Video player responsive */
+.video-container {
+  position: relative;
+  width: 100%;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+}
+
+.video-container video {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Note-taking sidebar */
+.sticky-top {
+  top: 2rem;
+}
+
+#moduleNotes {
+  border-radius: var(--border-radius);
+  border: 2px solid #e9ecef;
+  transition: var(--transition);
+  font-family: 'Monaco', 'Menlo', monospace;
+  font-size: 0.9rem;
+}
+
+#moduleNotes:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Search functionality */
+#moduleSearch {
+  border-radius: var(--border-radius);
+  border: 2px solid #e9ecef;
+  transition: var(--transition);
+  padding: 0.75rem;
+}
+
+#moduleSearch:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Smooth animations and hover effects */
+.btn {
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.card {
+  border: none;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+}
+
+.card:hover {
+  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .module-card .card-body {
+    padding: 1rem;
+  }
+  
+  .quiz-container {
+    padding: 1rem;
+  }
+  
+  .btn {
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+  
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sticky-top {
+    position: static;
+    margin-top: 2rem;
+  }
+}
+
+/* Touch-friendly interface */
+@media (hover: none) and (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .form-control {
+    min-height: 44px;
+  }
+  
+  .module-card:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode compatibility */
+@media (prefers-contrast: high) {
+  .module-card {
+    border: 2px solid var(--dark-color);
+    background: white;
+    color: var(--dark-color);
+  }
+  
+  .progress-bar {
+    background: var(--dark-color);
+  }
+}
+
+/* Admin panel specific styles */
+.admin-dashboard {
+  background: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 2rem;
+}
+
+.admin-tabs {
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 2rem;
+}
+
+.admin-tabs .nav-link {
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--secondary-color);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.admin-tabs .nav-link.active {
+  border-bottom-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Modal improvements */
+.modal-content {
+  border-radius: var(--border-radius);
+  border: none;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  border-bottom: 2px solid #e9ecef;
+}
+
+.modal-footer {
+  border-top: 2px solid #e9ecef;
+}
