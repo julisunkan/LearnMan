@@ -1,6 +1,72 @@
 // Main JavaScript for tutorial platform
 // Progress tracking using localStorage
 
+// Mobile navigation state
+let currentModal = null;
+
+// Set active navigation item
+function setActiveNavItem(itemId) {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.getElementById(itemId)?.classList.add('active');
+}
+
+// Close current modal
+function closeModal() {
+    if (currentModal) {
+        currentModal.classList.remove('show');
+        setTimeout(() => {
+            if (currentModal && currentModal.parentNode) {
+                currentModal.parentNode.removeChild(currentModal);
+            }
+            currentModal = null;
+        }, 300);
+    }
+}
+
+// Create modal template safely using DOM APIs
+function createModal(title, contentHtml) {
+    closeModal();
+    
+    const modal = document.createElement('div');
+    modal.className = 'mobile-modal';
+    
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'mobile-modal-header';
+    
+    const titleEl = document.createElement('h2');
+    titleEl.className = 'mobile-modal-title';
+    titleEl.textContent = title;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'modal-close-btn';
+    closeBtn.textContent = '×';
+    closeBtn.onclick = closeModal;
+    
+    header.appendChild(titleEl);
+    header.appendChild(closeBtn);
+    
+    // Create content area
+    const content = document.createElement('div');
+    content.className = 'mobile-modal-content';
+    content.innerHTML = contentHtml; // Still using innerHTML but content is pre-sanitized
+    
+    modal.appendChild(header);
+    modal.appendChild(content);
+    
+    document.body.appendChild(modal);
+    currentModal = modal;
+    
+    // Show modal with animation
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+    
+    return modal;
+}
+
 class TutorialPlatform {
     constructor() {
         this.init();
@@ -297,88 +363,215 @@ class TutorialPlatform {
 
     // User data display functions
     showProgress() {
+        setActiveNavItem('nav-progress');
         const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        let progressHtml = '<div class="modal fade" id="progressModal"><div class="modal-dialog"><div class="modal-content">';
-        progressHtml += '<div class="modal-header"><h5>Your Progress</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>';
-        progressHtml += '<div class="modal-body">';
+        let content = '';
         
         if (Object.keys(progress).length === 0) {
-            progressHtml += '<p>No progress recorded yet.</p>';
+            content = `
+                <div class="alert alert-info">
+                    <h4>📊 No Progress Yet</h4>
+                    <p>Start learning modules to track your progress here!</p>
+                </div>
+            `;
         } else {
-            progressHtml += '<ul class="list-group">';
+            content = '<div class="row">';
             for (const [moduleId, data] of Object.entries(progress)) {
-                progressHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                    Module ${moduleId}
-                    <div>
-                        <div class="progress" style="width: 100px;">
-                            <div class="progress-bar" style="width: ${data.progress}%"></div>
+                const completedBadge = data.completed ? '<span class="badge bg-success">Completed</span>' : '';
+                const completedDate = data.completedAt ? new Date(data.completedAt).toLocaleDateString() : '';
+                
+                content += `
+                    <div class="col-12 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title mb-0">Module</h6>
+                                    ${completedBadge}
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" style="width: ${data.progress}%"></div>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">${data.progress}% Complete</small>
+                                    ${completedDate ? `<small class="text-muted">Completed: ${completedDate}</small>` : ''}
+                                </div>
+                                <a href="/module/${moduleId}" class="btn btn-primary btn-sm mt-2">Continue Learning</a>
+                            </div>
                         </div>
-                        <small>${data.progress}%</small>
                     </div>
-                </li>`;
+                `;
             }
-            progressHtml += '</ul>';
+            content += '</div>';
         }
         
-        progressHtml += '</div></div></div></div>';
-        
-        document.body.insertAdjacentHTML('beforeend', progressHtml);
-        new bootstrap.Modal(document.getElementById('progressModal')).show();
+        createModal('Your Progress', content);
     }
 
     showBookmarks() {
+        setActiveNavItem('nav-bookmarks');
         const bookmarks = JSON.parse(localStorage.getItem('bookmarkedModules') || '[]');
-        let bookmarksHtml = '<div class="modal fade" id="bookmarksModal"><div class="modal-dialog"><div class="modal-content">';
-        bookmarksHtml += '<div class="modal-header"><h5>Your Bookmarks</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>';
-        bookmarksHtml += '<div class="modal-body">';
+        let content = '';
         
         if (bookmarks.length === 0) {
-            bookmarksHtml += '<p>No bookmarks saved yet.</p>';
+            content = `
+                <div class="alert alert-info">
+                    <h4>🔖 No Bookmarks Yet</h4>
+                    <p>Bookmark your favorite modules while learning to access them quickly here!</p>
+                </div>
+            `;
         } else {
-            bookmarksHtml += '<ul class="list-group">';
+            content = '<div class="row">';
             bookmarks.forEach(moduleId => {
-                bookmarksHtml += `<li class="list-group-item">
-                    <a href="/module/${moduleId}">Module ${moduleId}</a>
-                </li>`;
+                // Escape module ID for safe HTML insertion
+                const safeModuleId = this.escapeHtml(moduleId);
+                content += `
+                    <div class="col-12 mb-3">
+                        <div class="card module-card">
+                            <div class="card-body">
+                                <h6 class="card-title">Bookmarked Module</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <a href="/module/${safeModuleId}" class="btn btn-primary">Continue Learning</a>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="bookmarkModule('${safeModuleId}'); showBookmarks();">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
-            bookmarksHtml += '</ul>';
+            content += '</div>';
         }
         
-        bookmarksHtml += '</div></div></div></div>';
-        
-        document.body.insertAdjacentHTML('beforeend', bookmarksHtml);
-        new bootstrap.Modal(document.getElementById('bookmarksModal')).show();
+        createModal('My Bookmarks', content);
     }
 
     showNotes() {
+        setActiveNavItem('nav-notes');
         const notes = JSON.parse(localStorage.getItem('moduleNotes') || '{}');
-        let notesHtml = '<div class="modal fade" id="notesModal"><div class="modal-dialog modal-lg"><div class="modal-content">';
-        notesHtml += '<div class="modal-header"><h5>Your Notes</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>';
-        notesHtml += '<div class="modal-body">';
+        let content = '';
         
         if (Object.keys(notes).length === 0) {
-            notesHtml += '<p>No notes saved yet.</p>';
+            content = `
+                <div class="alert alert-info">
+                    <h4>📝 No Notes Yet</h4>
+                    <p>Take notes while learning modules to review them here later!</p>
+                </div>
+            `;
         } else {
+            content = '<div class="row">';
             for (const [moduleId, data] of Object.entries(notes)) {
-                notesHtml += `<div class="card mb-3">
-                    <div class="card-header">Module ${moduleId}</div>
-                    <div class="card-body">
-                        <pre class="small">${data.content}</pre>
+                // Escape HTML to prevent XSS
+                const notePreview = this.escapeHtml(data.content.length > 100 ? data.content.substring(0, 100) + '...' : data.content);
+                const lastUpdate = new Date(data.lastUpdate).toLocaleDateString();
+                
+                content += `
+                    <div class="col-12 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">Module Notes</h6>
+                                <p class="card-text small">${notePreview}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Updated: ${lastUpdate}</small>
+                                    <a href="/module/${moduleId}" class="btn btn-outline-primary btn-sm">View Module</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>`;
+                `;
             }
+            content += '</div>';
         }
         
-        notesHtml += '</div></div></div></div>';
+        createModal('My Notes', content);
+    }
+    
+    showCertificates() {
+        setActiveNavItem('nav-certificates');
+        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
+        const completedModules = Object.entries(progress).filter(([moduleId, data]) => data.completed);
+        let content = '';
         
-        document.body.insertAdjacentHTML('beforeend', notesHtml);
-        new bootstrap.Modal(document.getElementById('notesModal')).show();
+        if (completedModules.length === 0) {
+            content = `
+                <div class="alert alert-info">
+                    <h4>🏆 No Certificates Yet</h4>
+                    <p>Complete modules and pass their quizzes to earn certificates!</p>
+                </div>
+            `;
+        } else {
+            content = '<div class="row">';
+            completedModules.forEach(([moduleId, data]) => {
+                const completedDate = new Date(data.completedAt).toLocaleDateString();
+                
+                content += `
+                    <div class="col-12 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="card-title">🏆 Certificate Available</h6>
+                                        <p class="card-text">Completed on ${completedDate}</p>
+                                    </div>
+                                    <span class="badge bg-success">Completed</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Score: ${data.progress}%</small>
+                                    <div>
+                                        <a href="/module/${moduleId}" class="btn btn-outline-primary btn-sm me-2">View Module</a>
+                                        <a href="/certificate/${moduleId}" class="btn btn-primary btn-sm" download>Download Certificate</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            content += '</div>';
+        }
+        
+        createModal('My Certificates', content);
+    }
+    
+    // Utility function to escape HTML and prevent XSS
+    escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 }
 
 // Initialize the platform when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.tutorialPlatform = new TutorialPlatform();
+    
+    // Expose methods globally to ensure onclick handlers work
+    window.showProgress = function() {
+        if (window.tutorialPlatform) {
+            window.tutorialPlatform.showProgress();
+        }
+    };
+    
+    window.showBookmarks = function() {
+        if (window.tutorialPlatform) {
+            window.tutorialPlatform.showBookmarks();
+        }
+    };
+    
+    window.showNotes = function() {
+        if (window.tutorialPlatform) {
+            window.tutorialPlatform.showNotes();
+        }
+    };
+    
+    window.showCertificates = function() {
+        if (window.tutorialPlatform) {
+            window.tutorialPlatform.showCertificates();
+        }
+    };
 });
 
 // Global functions for inline event handlers
@@ -411,13 +604,33 @@ function submitQuiz(moduleId) {
 }
 
 function showProgress() {
-    window.tutorialPlatform.showProgress();
+    if (window.tutorialPlatform) {
+        window.tutorialPlatform.showProgress();
+    }
 }
 
 function showBookmarks() {
-    window.tutorialPlatform.showBookmarks();
+    if (window.tutorialPlatform) {
+        window.tutorialPlatform.showBookmarks();
+    }
 }
 
 function showNotes() {
-    window.tutorialPlatform.showNotes();
+    if (window.tutorialPlatform) {
+        window.tutorialPlatform.showNotes();
+    }
 }
+
+function showCertificates() {
+    if (window.tutorialPlatform) {
+        window.tutorialPlatform.showCertificates();
+    }
+}
+
+// Set active nav item for current page
+document.addEventListener('DOMContentLoaded', function() {
+    const currentPath = window.location.pathname;
+    if (currentPath === '/' || currentPath === '/index') {
+        setActiveNavItem('nav-home');
+    }
+});

@@ -9,20 +9,28 @@
 </div>
 
 <div class="row">
-    <div class="col-md-8">
-        <h2>Available Modules</h2>
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="mb-0">Available Modules</h2>
+            <div class="search-container" style="max-width: 300px;">
+                <input type="text" class="form-control" placeholder="Search modules..." id="moduleSearch" onkeyup="filterModules()">
+            </div>
+        </div>
+        
         {% if courses.modules %}
             <div class="row">
                 {% for module in courses.modules %}
-                    <div class="col-md-6 mb-4">
+                    <div class="col-lg-6 col-12 mb-4">
                         <div class="card module-card">
                             <div class="card-body">
                                 <h5 class="card-title">{{ module.title }}</h5>
                                 <p class="card-text">{{ module.description[:100] }}{% if module.description|length > 100 %}...{% endif %}</p>
-                                <a href="{{ url_for('module_detail', module_id=module.id) }}" class="btn btn-primary">Start Learning</a>
-                                {% if module.quiz %}
-                                    <a href="{{ url_for('quiz', module_id=module.id) }}" class="btn btn-outline-secondary">Take Quiz</a>
-                                {% endif %}
+                                <div class="btn-group-vertical d-grid gap-2">
+                                    <a href="{{ url_for('module_detail', module_id=module.id) }}" class="btn btn-primary">Start Learning</a>
+                                    {% if module.quiz %}
+                                        <a href="{{ url_for('quiz', module_id=module.id) }}" class="btn btn-outline-secondary">Take Quiz</a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -34,30 +42,6 @@
                 <p>There are currently no learning modules available. Check back later or contact an administrator.</p>
             </div>
         {% endif %}
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>Quick Access</h5>
-            </div>
-            <div class="card-body">
-                <div class="list-group list-group-flush">
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showProgress()">View Progress</a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showBookmarks()">My Bookmarks</a>
-                    <a href="#" class="list-group-item list-group-item-action" onclick="showNotes()">My Notes</a>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5>Search Modules</h5>
-            </div>
-            <div class="card-body">
-                <input type="text" class="form-control" placeholder="Search modules..." id="moduleSearch" onkeyup="filterModules()">
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}
