@@ -186,7 +186,20 @@ def quiz_submit():
 @app.route('/sw.js')
 def service_worker():
     """Serve the service worker from root scope for PWA installability"""
-    return app.send_static_file('sw.js'), 200, {'Content-Type': 'application/javascript'}
+    response = app.send_static_file('sw.js')
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+# Add cache control for static files in development
+@app.after_request
+def after_request(response):
+    if app.debug:  # Only in debug mode
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 @app.route('/certificate/<module_id>')
 def generate_certificate(module_id):
