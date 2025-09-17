@@ -8,13 +8,13 @@
     "height": 500
   },
   "header_customization": {
-    "title_color": "#000000",
+    "title_color": "#1f2937",
     "title_size": "1.25rem",
-    "nav_text_color": "#000000",
+    "nav_text_color": "#1f2937",
     "nav_text_size": "1rem",
-    "background_gradient_start": "#ebebeb",
-    "background_gradient_middle": "#0bc5cb",
-    "background_gradient_end": "#66ccc5",
+    "background_gradient_start": "#3b82f6",
+    "background_gradient_middle": "#06b6d4",
+    "background_gradient_end": "#8b5cf6",
     "show_emoji": false,
     "custom_emoji": "\u2728"
   }
