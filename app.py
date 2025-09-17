@@ -3,6 +3,7 @@ import json
 import uuid
 import ipaddress
 import socket
+import sqlite3
 from datetime import datetime
 from functools import wraps
 from urllib.parse import urlparse
@@ -28,6 +29,108 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 openai_client = None
 if os.environ.get('OPENAI_API_KEY'):
     openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+
+# Database initialization
+def init_database():
+    """Initialize SQLite database with required tables"""
+    os.makedirs('data', exist_ok=True)
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    # Create modules table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS modules (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            video_url TEXT,
+            created_at TEXT NOT NULL,
+            order_num INTEGER DEFAULT 0,
+            quiz_data TEXT
+        )
+    ''')
+    
+    # Create module_content table for storing HTML content
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS module_content (
+            module_id TEXT PRIMARY KEY,
+            content TEXT,
+            FOREIGN KEY (module_id) REFERENCES modules (id) ON DELETE CASCADE
+        )
+    ''')
+    
+    # Create progress table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS progress (
+            id TEXT PRIMARY KEY,
+            data TEXT NOT NULL
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
+
+# Initialize database on startup
+init_database()
+
+# Migrate existing JSON data to SQLite
+def migrate_json_to_sqlite():
+    """Migrate existing JSON data to SQLite database if it exists"""
+    json_file = 'data/courses.json'
+    if os.path.exists(json_file):
+        try:
+            with open(json_file, 'r') as f:
+                json_data = json.load(f)
+            
+            # Check if there are modules to migrate
+            if json_data.get('modules'):
+                conn = sqlite3.connect('data/tutorial_platform.db')
+                cursor = conn.cursor()
+                
+                # Check if database is empty
+                cursor.execute('SELECT COUNT(*) FROM modules')
+                if cursor.fetchone()[0] == 0:
+                    print("Migrating existing modules from JSON to SQLite...")
+                    
+                    # Migrate modules
+                    for module in json_data['modules']:
+                        quiz_data = None
+                        if 'quiz' in module:
+                            quiz_data = json.dumps(module['quiz'])
+                            
+                        cursor.execute('''
+                            INSERT INTO modules (id, title, description, video_url, created_at, order_num, quiz_data)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ''', (
+                            module['id'],
+                            module['title'],
+                            module.get('description', ''),
+                            module.get('video_url', ''),
+                            module['created_at'],
+                            module.get('order', 0),
+                            quiz_data
+                        ))
+                        
+                        # Migrate content files
+                        content_file = f"data/modules/{module['id']}.html"
+                        if os.path.exists(content_file):
+                            with open(content_file, 'r') as cf:
+                                content = cf.read()
+                                cursor.execute('''
+                                    INSERT INTO module_content (module_id, content)
+                                    VALUES (?, ?)
+                                ''', (module['id'], content))
+                    
+                    conn.commit()
+                    print(f"Successfully migrated {len(json_data['modules'])} modules to SQLite")
+                
+                conn.close()
+                
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Migration skipped: {e}")
+
+# Run migration
+migrate_json_to_sqlite()
 
 # Load configuration
 def load_config():
@@ -58,17 +161,130 @@ def save_config(config):
     with open('config.json', 'w') as f:
         json.dump(config, f, indent=2)
 
-# Load courses data
+# Load courses data from SQLite
 def load_courses():
-    try:
-        with open('data/courses.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"modules": []}
+    """Load courses from SQLite database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, title, description, video_url, created_at, order_num, quiz_data 
+        FROM modules ORDER BY order_num, created_at
+    ''')
+    
+    modules = []
+    for row in cursor.fetchall():
+        module = {
+            'id': row[0],
+            'title': row[1],
+            'description': row[2] or '',
+            'video_url': row[3] or '',
+            'created_at': row[4],
+            'order': row[5]
+        }
+        
+        # Parse quiz data if it exists
+        if row[6]:
+            try:
+                module['quiz'] = json.loads(row[6])
+            except json.JSONDecodeError:
+                pass
+        
+        modules.append(module)
+    
+    conn.close()
+    return {"modules": modules}
 
 def save_courses(data):
-    with open('data/courses.json', 'w') as f:
-        json.dump(data, f, indent=2)
+    """Save courses to SQLite database - safer update approach"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
+    cursor = conn.cursor()
+    
+    # Get existing module IDs
+    cursor.execute('SELECT id FROM modules')
+    existing_ids = set(row[0] for row in cursor.fetchall())
+    
+    # Get new module IDs
+    new_ids = set(module['id'] for module in data.get('modules', []))
+    
+    # Delete modules that are no longer present
+    for module_id in existing_ids - new_ids:
+        cursor.execute('DELETE FROM modules WHERE id = ?', (module_id,))
+    
+    # Update or insert modules
+    for module in data.get('modules', []):
+        quiz_data = None
+        if 'quiz' in module:
+            quiz_data = json.dumps(module['quiz'])
+            
+        cursor.execute('''
+            INSERT OR REPLACE INTO modules (id, title, description, video_url, created_at, order_num, quiz_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            module['id'],
+            module['title'],
+            module.get('description', ''),
+            module.get('video_url', ''),
+            module['created_at'],
+            module.get('order', 0),
+            quiz_data
+        ))
+    
+    conn.commit()
+    conn.close()
+
+def update_module_in_db(module):
+    """Update a single module in the database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    conn.execute('PRAGMA foreign_keys=ON')
+    cursor = conn.cursor()
+    
+    quiz_data = None
+    if 'quiz' in module:
+        quiz_data = json.dumps(module['quiz'])
+        
+    cursor.execute('''
+        INSERT OR REPLACE INTO modules (id, title, description, video_url, created_at, order_num, quiz_data)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        module['id'],
+        module['title'],
+        module.get('description', ''),
+        module.get('video_url', ''),
+        module['created_at'],
+        module.get('order', 0),
+        quiz_data
+    ))
+    
+    conn.commit()
+    conn.close()
+
+def save_module_content(module_id, content):
+    """Save module content to database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT OR REPLACE INTO module_content (module_id, content)
+        VALUES (?, ?)
+    ''', (module_id, content))
+    
+    conn.commit()
+    conn.close()
+
+def load_module_content(module_id):
+    """Load module content from database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
+    result = cursor.fetchone()
+    
+    conn.close()
+    return result[0] if result else None
 
 # Load progress data
 def load_progress():
@@ -321,12 +537,9 @@ def module_detail(module_id):
         flash('Module not found', 'error')
         return redirect(url_for('index'))
     
-    # Load module content if it exists
-    content_file = f"data/modules/{module_id}.html"
-    try:
-        with open(content_file, 'r') as f:
-            module['content'] = f.read()
-    except FileNotFoundError:
+    # Load module content from database
+    module['content'] = load_module_content(module_id)
+    if not module['content']:
         module['content'] = "<p>No content available for this module.</p>"
     
     config = load_config()
@@ -605,11 +818,9 @@ def admin_new_module():
             'order': 0
         }
         
-        # Save module content to file
+        # Save module content to database
         if content:
-            content_file = f"data/modules/{module_id}.html"
-            with open(content_file, 'w') as f:
-                f.write(content)
+            save_module_content(module_id, content)
         
         # Add module to courses data
         courses_data = load_courses()
@@ -651,9 +862,7 @@ def admin_edit_module(module_id):
         
         content = request.form.get('content')
         if content:
-            content_file = f"data/modules/{module_id}.html"
-            with open(content_file, 'w') as f:
-                f.write(content)
+            save_module_content(module_id, content)
         
         save_courses(courses_data)
         flash('Module updated successfully', 'success')
@@ -683,12 +892,7 @@ def admin_delete_module(module_id):
     courses_data['modules'] = [m for m in courses_data['modules'] if m['id'] != module_id]
     save_courses(courses_data)
     
-    # Delete content file
-    content_file = f"data/modules/{module_id}.html"
-    try:
-        os.remove(content_file)
-    except FileNotFoundError:
-        pass
+    # Content is automatically deleted by the database foreign key constraint
     
     return jsonify({'success': True})
 
