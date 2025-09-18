@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('admin_certificate_templates') }}">Certificate Templates</a></li>
+                <li class="breadcrumb-item active">{{ action }} Template</li>
+            </ol>
+        </nav>
+        
+        <h1>{{ action }} Certificate Template</h1>
+        
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Basic Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Template Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ template.name if template else '' }}" required>
+                        <div class="form-text">A descriptive name for this template (e.g., "Professional Blue", "Corporate Style")</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_default" name="is_default" {% if template and template.is_default %}checked{% endif %}>
+                            <label class="form-check-label" for="is_default">
+                                Set as default template
+                            </label>
+                            <div class="form-text">The default template is used for all new certificates</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Certificate Text Content -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Certificate Text</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Certificate Title</label>
+                        <input type="text" class="form-control" id="title" name="title" value="{{ template.title if template else 'Certificate of Completion' }}" required>
+                        <div class="form-text">The main title shown at the top of the certificate</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subtitle" class="form-label">Certificate Subtitle</label>
+                        <input type="text" class="form-control" id="subtitle" name="subtitle" value="{{ template.subtitle if template else 'This certifies that you have successfully completed:' }}" required>
+                        <div class="form-text">Text shown below the title, before the module name</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="footer_text" class="form-label">Footer Text (Optional)</label>
+                        <input type="text" class="form-control" id="footer_text" name="footer_text" value="{{ template.footer_text if template else '' }}">
+                        <div class="form-text">Additional text shown at the bottom of the certificate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Typography -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Typography & Layout</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Font Sizes (pixels)</h6>
+                            
+                            <div class="mb-3">
+                                <label for="font_size_title" class="form-label">Title Font Size</label>
+                                <input type="number" class="form-control" id="font_size_title" name="font_size_title" value="{{ template.font_size_title if template else 28 }}" min="12" max="72">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="font_size_subtitle" class="form-label">Subtitle Font Size</label>
+                                <input type="number" class="form-control" id="font_size_subtitle" name="font_size_subtitle" value="{{ template.font_size_subtitle if template else 16 }}" min="8" max="48">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="font_size_module" class="form-label">Module Name Font Size</label>
+                                <input type="number" class="form-control" id="font_size_module" name="font_size_module" value="{{ template.font_size_module if template else 22 }}" min="10" max="64">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="font_size_date" class="form-label">Date Font Size</label>
+                                <input type="number" class="form-control" id="font_size_date" name="font_size_date" value="{{ template.font_size_date if template else 12 }}" min="8" max="24">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Margins (pixels from top)</h6>
+                            
+                            <div class="mb-3">
+                                <label for="margin_top" class="form-label">Title Margin</label>
+                                <input type="number" class="form-control" id="margin_top" name="margin_top" value="{{ template.margin_top if template else 100 }}" min="50" max="300">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="margin_subtitle" class="form-label">Subtitle Margin</label>
+                                <input type="number" class="form-control" id="margin_subtitle" name="margin_subtitle" value="{{ template.margin_subtitle if template else 200 }}" min="100" max="400">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="margin_module" class="form-label">Module Name Margin</label>
+                                <input type="number" class="form-control" id="margin_module" name="margin_module" value="{{ template.margin_module if template else 250 }}" min="150" max="450">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="margin_date" class="form-label">Date Margin</label>
+                                <input type="number" class="form-control" id="margin_date" name="margin_date" value="{{ template.margin_date if template else 350 }}" min="200" max="500">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="margin_footer" class="form-label">Footer Margin</label>
+                                <input type="number" class="form-control" id="margin_footer" name="margin_footer" value="{{ template.margin_footer if template else 450 }}" min="250" max="600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Colors -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Colors</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="background_color" class="form-label">Background Color</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color" id="background_color" name="background_color" value="{{ template.background_color if template else '#FFFFFF' }}">
+                                    <input type="text" class="form-control" value="{{ template.background_color if template else '#FFFFFF' }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="text_color" class="form-label">Text Color</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color" id="text_color" name="text_color" value="{{ template.text_color if template else '#000000' }}">
+                                    <input type="text" class="form-control" value="{{ template.text_color if template else '#000000' }}" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary">{{ action }} Template</button>
+                <a href="{{ url_for('admin_certificate_templates') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card sticky-top">
+            <div class="card-header">
+                <h5>Live Preview</h5>
+            </div>
+            <div class="card-body">
+                <div id="certificatePreview" class="border p-3" style="aspect-ratio: 8.5/11; background-color: white; position: relative; font-family: 'Helvetica', Arial, sans-serif;">
+                    <div id="previewTitle" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%;">Certificate of Completion</div>
+                    <div id="previewSubtitle" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">This certifies that you have successfully completed:</div>
+                    <div id="previewModule" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%;">Sample Module Name</div>
+                    <div id="previewDate" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">Date: September 18, 2025</div>
+                    <div id="previewFooter" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; font-style: italic;"></div>
+                </div>
+                <div class="form-text mt-2">
+                    <small>Preview updates as you change the settings above. The actual certificate will be generated as a PDF with proper formatting.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update color input text fields when color picker changes
+    const colorInputs = document.querySelectorAll('input[type="color"]');
+    colorInputs.forEach(input => {
+        const textInput = input.parentNode.querySelector('input[type="text"]');
+        input.addEventListener('change', function() {
+            textInput.value = this.value.toUpperCase();
+            updatePreview();
+        });
+    });
+    
+    // Update preview when any form field changes
+    const formInputs = document.querySelectorAll('input, textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', updatePreview);
+        input.addEventListener('change', updatePreview);
+    });
+    
+    // Initial preview update
+    updatePreview();
+    
+    function updatePreview() {
+        const preview = document.getElementById('certificatePreview');
+        const title = document.getElementById('previewTitle');
+        const subtitle = document.getElementById('previewSubtitle');
+        const module = document.getElementById('previewModule');
+        const date = document.getElementById('previewDate');
+        const footer = document.getElementById('previewFooter');
+        
+        // Get values
+        const titleText = document.getElementById('title').value || 'Certificate of Completion';
+        const subtitleText = document.getElementById('subtitle').value || 'This certifies that you have successfully completed:';
+        const footerText = document.getElementById('footer_text').value;
+        
+        const titleSize = document.getElementById('font_size_title').value || 28;
+        const subtitleSize = document.getElementById('font_size_subtitle').value || 16;
+        const moduleSize = document.getElementById('font_size_module').value || 22;
+        const dateSize = document.getElementById('font_size_date').value || 12;
+        
+        const titleMargin = document.getElementById('margin_top').value || 100;
+        const subtitleMargin = document.getElementById('margin_subtitle').value || 200;
+        const moduleMargin = document.getElementById('margin_module').value || 250;
+        const dateMargin = document.getElementById('margin_date').value || 350;
+        const footerMargin = document.getElementById('margin_footer').value || 450;
+        
+        const bgColor = document.getElementById('background_color').value || '#FFFFFF';
+        const textColor = document.getElementById('text_color').value || '#000000';
+        
+        // Update preview
+        preview.style.backgroundColor = bgColor;
+        preview.style.color = textColor;
+        
+        title.textContent = titleText;
+        title.style.fontSize = (titleSize * 0.3) + 'px';  // Scale down for preview
+        title.style.top = (titleMargin * 0.3) + 'px';
+        
+        subtitle.textContent = subtitleText;
+        subtitle.style.fontSize = (subtitleSize * 0.3) + 'px';
+        subtitle.style.top = (subtitleMargin * 0.3) + 'px';
+        
+        module.style.fontSize = (moduleSize * 0.3) + 'px';
+        module.style.top = (moduleMargin * 0.3) + 'px';
+        
+        date.style.fontSize = (dateSize * 0.3) + 'px';
+        date.style.top = (dateMargin * 0.3) + 'px';
+        
+        if (footerText) {
+            footer.textContent = footerText;
+            footer.style.fontSize = (dateSize * 0.3) + 'px';
+            footer.style.top = (footerMargin * 0.3) + 'px';
+            footer.style.display = 'block';
+        } else {
+            footer.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

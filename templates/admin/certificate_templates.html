@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+            <li class="breadcrumb-item active">Certificate Templates</li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Certificate Templates</h1>
+        <a href="{{ url_for('admin_new_certificate_template') }}" class="btn btn-primary">Create New Template</a>
+    </div>
+    
+    {% if templates %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Title</th>
+                        <th>Status</th>
+                        <th>Colors</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for template in templates %}
+                        <tr>
+                            <td>
+                                <strong>{{ template.name }}</strong>
+                                {% if template.is_default %}
+                                    <span class="badge bg-primary ms-2">Default</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ template.title }}</td>
+                            <td>
+                                {% if template.is_default %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <div class="color-preview" style="background-color: {{ template.background_color }}; width: 20px; height: 20px; border: 1px solid #ccc; border-radius: 3px;" title="Background: {{ template.background_color }}"></div>
+                                    <div class="color-preview" style="background-color: {{ template.text_color }}; width: 20px; height: 20px; border: 1px solid #ccc; border-radius: 3px;" title="Text: {{ template.text_color }}"></div>
+                                </div>
+                            </td>
+                            <td>{{ template.created_at[:10] if template.created_at else 'N/A' }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('admin_edit_certificate_template', template_id=template.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    {% if not template.is_default %}
+                                        <button class="btn btn-sm btn-outline-success" onclick="setDefaultTemplate('{{ template.id }}')">Set Default</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteTemplate('{{ template.id }}')">Delete</button>
+                                    {% else %}
+                                        <span class="btn btn-sm btn-outline-secondary disabled">Current Default</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-4">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle"></i> About Certificate Templates</h6>
+                <p class="mb-0">Certificate templates control how your completion certificates look. The default template is used when generating certificates for completed modules. You can customize colors, fonts, text, and layout to match your brand.</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <h4>No Certificate Templates</h4>
+            <p>You haven't created any certificate templates yet.</p>
+            <a href="{{ url_for('admin_new_certificate_template') }}" class="btn btn-primary">Create Your First Template</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function setDefaultTemplate(templateId) {
+    if (!confirm('Set this template as the default for new certificates?')) {
+        return;
+    }
+    
+    fetch(`/admin/certificate-template/${templateId}/set-default`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error setting default template: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error.message);
+    });
+}
+
+function deleteTemplate(templateId) {
+    if (!confirm('Are you sure you want to delete this certificate template? This action cannot be undone.')) {
+        return;
+    }
+    
+    fetch(`/admin/certificate-template/${templateId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error deleting template: ' + (data.error || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Network error: ' + error.message);
+    });
+}
+</script>
+{% endblock %}

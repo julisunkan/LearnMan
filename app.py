@@ -67,6 +67,39 @@ def init_database():
         )
     ''')
     
+    # Create site configuration table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS site_config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            data_type TEXT DEFAULT 'string'
+        )
+    ''')
+    
+    # Create certificate templates table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS certificate_templates (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            title TEXT NOT NULL DEFAULT 'Certificate of Completion',
+            subtitle TEXT DEFAULT 'This certifies that you have successfully completed:',
+            footer_text TEXT DEFAULT '',
+            font_size_title INTEGER DEFAULT 24,
+            font_size_subtitle INTEGER DEFAULT 16,
+            font_size_module INTEGER DEFAULT 20,
+            font_size_date INTEGER DEFAULT 12,
+            margin_top INTEGER DEFAULT 100,
+            margin_subtitle INTEGER DEFAULT 200,
+            margin_module INTEGER DEFAULT 250,
+            margin_date INTEGER DEFAULT 350,
+            margin_footer INTEGER DEFAULT 400,
+            background_color TEXT DEFAULT '#ffffff',
+            text_color TEXT DEFAULT '#000000',
+            is_default INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -132,12 +165,97 @@ def migrate_json_to_sqlite():
 # Run migration
 migrate_json_to_sqlite()
 
-# Load configuration
+# Migrate configuration and create default certificate template
+def migrate_config_to_sqlite():
+    """Migrate configuration from config.json to SQLite database"""
+    config_file = 'config.json'
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r') as f:
+                config_data = json.load(f)
+            
+            conn = sqlite3.connect('data/tutorial_platform.db')
+            cursor = conn.cursor()
+            
+            # Check if configuration already migrated
+            cursor.execute('SELECT COUNT(*) FROM site_config')
+            if cursor.fetchone()[0] == 0:
+                print("Migrating configuration from JSON to SQLite...")
+                
+                # Flatten configuration and insert into database
+                def insert_config(prefix, data):
+                    for key, value in data.items():
+                        full_key = f"{prefix}.{key}" if prefix else key
+                        if isinstance(value, dict):
+                            insert_config(full_key, value)
+                        else:
+                            cursor.execute(
+                                'INSERT INTO site_config (key, value, data_type) VALUES (?, ?, ?)',
+                                (full_key, json.dumps(value) if not isinstance(value, str) else value, 
+                                 'json' if not isinstance(value, str) else 'string')
+                            )
+                
+                insert_config('', config_data)
+                print("Configuration migrated to SQLite successfully")
+            
+            conn.commit()
+            conn.close()
+            
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Config migration skipped: {e}")
+
+def create_default_certificate_template():
+    """Create default certificate template if none exists"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    # Check if default template exists
+    cursor.execute('SELECT COUNT(*) FROM certificate_templates WHERE is_default = 1')
+    if cursor.fetchone()[0] == 0:
+        print("Creating default certificate template...")
+        
+        template_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO certificate_templates (
+                id, name, title, subtitle, footer_text,
+                font_size_title, font_size_subtitle, font_size_module, font_size_date,
+                margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+                background_color, text_color, is_default, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            template_id,
+            'Default Certificate',
+            'Certificate of Completion',
+            'This certifies that you have successfully completed:',
+            'Congratulations on your achievement!',
+            24, 16, 20, 12,
+            100, 200, 250, 350, 400,
+            '#ffffff', '#000000',
+            1,
+            datetime.now().isoformat()
+        ))
+        
+        print("Default certificate template created")
+    
+    conn.commit()
+    conn.close()
+
+# Run configuration migration and create default template
+migrate_config_to_sqlite()
+create_default_certificate_template()
+
+# Load configuration from database
 def load_config():
-    try:
-        with open('config.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    """Load configuration from SQLite database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT key, value, data_type FROM site_config')
+    config_rows = cursor.fetchall()
+    conn.close()
+    
+    if not config_rows:
+        # Return default configuration if none exists
         return {
             "site_title": "Tutorial Platform",
             "site_description": "Interactive learning platform",
@@ -156,10 +274,267 @@ def load_config():
                 "custom_emoji": "✨"
             }
         }
+    
+    # Reconstruct nested configuration from flattened database format
+    config = {}
+    for key, value, data_type in config_rows:
+        if data_type == 'json':
+            try:
+                parsed_value = json.loads(value)
+            except json.JSONDecodeError:
+                parsed_value = value
+        else:
+            parsed_value = value
+            
+        # Handle nested keys (e.g., "header_customization.title_color")
+        keys = key.split('.')
+        current = config
+        for i, k in enumerate(keys[:-1]):
+            if k not in current:
+                current[k] = {}
+            current = current[k]
+        current[keys[-1]] = parsed_value
+    
+    return config
 
 def save_config(config):
-    with open('config.json', 'w') as f:
-        json.dump(config, f, indent=2)
+    """Save configuration to SQLite database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    # Clear existing configuration
+    cursor.execute('DELETE FROM site_config')
+    
+    # Flatten configuration and insert into database
+    def insert_config_recursive(prefix, data):
+        for key, value in data.items():
+            full_key = f"{prefix}.{key}" if prefix else key
+            if isinstance(value, dict):
+                insert_config_recursive(full_key, value)
+            else:
+                cursor.execute(
+                    'INSERT INTO site_config (key, value, data_type) VALUES (?, ?, ?)',
+                    (full_key, json.dumps(value) if not isinstance(value, str) else value, 
+                     'json' if not isinstance(value, str) else 'string')
+                )
+    
+    insert_config_recursive('', config)
+    
+    conn.commit()
+    conn.close()
+
+# Certificate template management functions
+def get_certificate_templates():
+    """Get all certificate templates from database"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, name, title, subtitle, footer_text,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+               background_color, text_color, is_default, created_at
+        FROM certificate_templates ORDER BY is_default DESC, name ASC
+    ''')
+    
+    templates = []
+    for row in cursor.fetchall():
+        template = {
+            'id': row[0],
+            'name': row[1],
+            'title': row[2],
+            'subtitle': row[3],
+            'footer_text': row[4],
+            'font_size_title': row[5],
+            'font_size_subtitle': row[6],
+            'font_size_module': row[7],
+            'font_size_date': row[8],
+            'margin_top': row[9],
+            'margin_subtitle': row[10],
+            'margin_module': row[11],
+            'margin_date': row[12],
+            'margin_footer': row[13],
+            'background_color': row[14],
+            'text_color': row[15],
+            'is_default': row[16],
+            'created_at': row[17]
+        }
+        templates.append(template)
+    
+    conn.close()
+    return templates
+
+def get_certificate_template(template_id):
+    """Get a specific certificate template by ID"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, name, title, subtitle, footer_text,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+               background_color, text_color, is_default, created_at
+        FROM certificate_templates WHERE id = ?
+    ''', (template_id,))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        return None
+        
+    return {
+        'id': row[0],
+        'name': row[1],
+        'title': row[2],
+        'subtitle': row[3],
+        'footer_text': row[4],
+        'font_size_title': row[5],
+        'font_size_subtitle': row[6],
+        'font_size_module': row[7],
+        'font_size_date': row[8],
+        'margin_top': row[9],
+        'margin_subtitle': row[10],
+        'margin_module': row[11],
+        'margin_date': row[12],
+        'margin_footer': row[13],
+        'background_color': row[14],
+        'text_color': row[15],
+        'is_default': row[16],
+        'created_at': row[17]
+    }
+
+def get_default_certificate_template():
+    """Get the default certificate template"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, name, title, subtitle, footer_text,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+               background_color, text_color, is_default, created_at
+        FROM certificate_templates WHERE is_default = 1 LIMIT 1
+    ''')
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        return None
+        
+    return {
+        'id': row[0],
+        'name': row[1],
+        'title': row[2],
+        'subtitle': row[3],
+        'footer_text': row[4],
+        'font_size_title': row[5],
+        'font_size_subtitle': row[6],
+        'font_size_module': row[7],
+        'font_size_date': row[8],
+        'margin_top': row[9],
+        'margin_subtitle': row[10],
+        'margin_module': row[11],
+        'margin_date': row[12],
+        'margin_footer': row[13],
+        'background_color': row[14],
+        'text_color': row[15],
+        'is_default': row[16],
+        'created_at': row[17]
+    }
+
+def save_certificate_template(template_data):
+    """Save or update a certificate template"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    # If this is set as default, unset all other defaults
+    if template_data.get('is_default'):
+        cursor.execute('UPDATE certificate_templates SET is_default = 0')
+    
+    if template_data.get('id'):
+        # Update existing template
+        cursor.execute('''
+            UPDATE certificate_templates SET
+                name = ?, title = ?, subtitle = ?, footer_text = ?,
+                font_size_title = ?, font_size_subtitle = ?, font_size_module = ?, font_size_date = ?,
+                margin_top = ?, margin_subtitle = ?, margin_module = ?, margin_date = ?, margin_footer = ?,
+                background_color = ?, text_color = ?, is_default = ?
+            WHERE id = ?
+        ''', (
+            template_data['name'],
+            template_data['title'],
+            template_data['subtitle'],
+            template_data.get('footer_text', ''),
+            template_data['font_size_title'],
+            template_data['font_size_subtitle'],
+            template_data['font_size_module'],
+            template_data['font_size_date'],
+            template_data['margin_top'],
+            template_data['margin_subtitle'],
+            template_data['margin_module'],
+            template_data['margin_date'],
+            template_data['margin_footer'],
+            template_data['background_color'],
+            template_data['text_color'],
+            template_data.get('is_default', 0),
+            template_data['id']
+        ))
+    else:
+        # Create new template
+        template_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO certificate_templates (
+                id, name, title, subtitle, footer_text,
+                font_size_title, font_size_subtitle, font_size_module, font_size_date,
+                margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+                background_color, text_color, is_default, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            template_id,
+            template_data['name'],
+            template_data['title'],
+            template_data['subtitle'],
+            template_data.get('footer_text', ''),
+            template_data['font_size_title'],
+            template_data['font_size_subtitle'],
+            template_data['font_size_module'],
+            template_data['font_size_date'],
+            template_data['margin_top'],
+            template_data['margin_subtitle'],
+            template_data['margin_module'],
+            template_data['margin_date'],
+            template_data['margin_footer'],
+            template_data['background_color'],
+            template_data['text_color'],
+            template_data.get('is_default', 0),
+            datetime.now().isoformat()
+        ))
+        template_data['id'] = template_id
+    
+    conn.commit()
+    conn.close()
+    return template_data['id']
+
+def delete_certificate_template(template_id):
+    """Delete a certificate template"""
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    
+    # Don't allow deleting the default template
+    cursor.execute('SELECT is_default FROM certificate_templates WHERE id = ?', (template_id,))
+    result = cursor.fetchone()
+    
+    if result and result[0] == 1:
+        conn.close()
+        return False, "Cannot delete the default template"
+    
+    cursor.execute('DELETE FROM certificate_templates WHERE id = ?', (template_id,))
+    
+    conn.commit()
+    conn.close()
+    return True, "Template deleted successfully"
 
 # Load courses data from SQLite
 def load_courses():
@@ -643,29 +1018,80 @@ def generate_certificate(module_id):
         flash('Module not found', 'error')
         return redirect(url_for('index'))
     
-    # Generate PDF certificate
+    # Get certificate template
+    template = get_default_certificate_template()
+    
+    # If no template exists, create a default one
+    if not template:
+        default_template = {
+            'name': 'Default Template',
+            'title': 'Certificate of Completion',
+            'subtitle': 'This certifies that you have successfully completed:',
+            'footer_text': 'Congratulations on your achievement!',
+            'font_size_title': 28,
+            'font_size_subtitle': 16,
+            'font_size_module': 22,
+            'font_size_date': 12,
+            'margin_top': 100,
+            'margin_subtitle': 200,
+            'margin_module': 250,
+            'margin_date': 350,
+            'margin_footer': 450,
+            'background_color': '#FFFFFF',
+            'text_color': '#000000',
+            'is_default': 1
+        }
+        save_certificate_template(default_template)
+        template = default_template
+    
+    # Generate PDF certificate using template
     filename = f"certificate_{module_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     filepath = f"static/resources/{filename}"
     
     c = canvas.Canvas(filepath, pagesize=letter)
     width, height = letter
     
-    # Certificate content
-    c.setFont("Helvetica-Bold", 24)
-    text = "Certificate of Completion"
-    c.drawString((width - c.stringWidth(text)) / 2, height - 100, text)
+    # Parse colors (hex to RGB)
+    def hex_to_rgb(hex_color):
+        hex_color = hex_color.lstrip('#')
+        if len(hex_color) == 6:
+            return tuple(int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4))
+        return (0, 0, 0)
     
-    c.setFont("Helvetica", 16)
-    text = "This certifies that you have successfully completed:"
-    c.drawString((width - c.stringWidth(text)) / 2, height - 200, text)
+    # Set background color
+    bg_color = hex_to_rgb(template['background_color'])
+    c.setFillColorRGB(*bg_color)
+    c.rect(0, 0, width, height, fill=True, stroke=False)
     
-    c.setFont("Helvetica-Bold", 20)
+    # Set text color
+    text_color = hex_to_rgb(template['text_color'])
+    c.setFillColorRGB(*text_color)
+    
+    # Certificate title
+    c.setFont("Helvetica-Bold", template['font_size_title'])
+    text = template['title']
+    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_top'], text)
+    
+    # Certificate subtitle
+    c.setFont("Helvetica", template['font_size_subtitle'])
+    text = template['subtitle']
+    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_subtitle'], text)
+    
+    # Module name
+    c.setFont("Helvetica-Bold", template['font_size_module'])
     text = module['title']
-    c.drawString((width - c.stringWidth(text)) / 2, height - 250, text)
+    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_module'], text)
     
-    c.setFont("Helvetica", 12)
+    # Date
+    c.setFont("Helvetica", template['font_size_date'])
     text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
-    c.drawString((width - c.stringWidth(text)) / 2, height - 350, text)
+    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_date'], text)
+    
+    # Footer text (if provided)
+    if template.get('footer_text'):
+        c.setFont("Helvetica-Oblique", template['font_size_date'])
+        text = template['footer_text']
+        c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_footer'], text)
     
     c.save()
     
@@ -1112,6 +1538,135 @@ def admin_export_data():
         as_attachment=True,
         download_name=f'tutorial_platform_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip'
     )
+
+# Certificate template management routes
+@app.route('/admin/certificate-templates')
+@require_admin
+def admin_certificate_templates():
+    templates = get_certificate_templates()
+    config = load_config()
+    return render_template('admin/certificate_templates.html', 
+                         templates=templates,
+                         config=config)
+
+@app.route('/admin/certificate-template/new', methods=['GET', 'POST'])
+@require_admin
+def admin_new_certificate_template():
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token', 'error')
+            return redirect(url_for('admin_new_certificate_template'))
+        
+        template_data = {
+            'name': request.form.get('name'),
+            'title': request.form.get('title'),
+            'subtitle': request.form.get('subtitle'),
+            'footer_text': request.form.get('footer_text', ''),
+            'font_size_title': int(request.form.get('font_size_title', 28)),
+            'font_size_subtitle': int(request.form.get('font_size_subtitle', 16)),
+            'font_size_module': int(request.form.get('font_size_module', 22)),
+            'font_size_date': int(request.form.get('font_size_date', 12)),
+            'margin_top': int(request.form.get('margin_top', 100)),
+            'margin_subtitle': int(request.form.get('margin_subtitle', 200)),
+            'margin_module': int(request.form.get('margin_module', 250)),
+            'margin_date': int(request.form.get('margin_date', 350)),
+            'margin_footer': int(request.form.get('margin_footer', 450)),
+            'background_color': request.form.get('background_color', '#FFFFFF'),
+            'text_color': request.form.get('text_color', '#000000'),
+            'is_default': bool(request.form.get('is_default'))
+        }
+        
+        if not template_data['name'] or not template_data['title']:
+            flash('Name and title are required', 'error')
+            return redirect(url_for('admin_new_certificate_template'))
+        
+        save_certificate_template(template_data)
+        flash('Certificate template created successfully', 'success')
+        return redirect(url_for('admin_certificate_templates'))
+    
+    config = load_config()
+    return render_template('admin/certificate_template_form.html', 
+                         config=config,
+                         template=None,
+                         action='Create')
+
+@app.route('/admin/certificate-template/<template_id>/edit', methods=['GET', 'POST'])
+@require_admin
+def admin_edit_certificate_template(template_id):
+    template = get_certificate_template(template_id)
+    
+    if not template:
+        flash('Certificate template not found', 'error')
+        return redirect(url_for('admin_certificate_templates'))
+    
+    if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token', 'error')
+            return redirect(url_for('admin_edit_certificate_template', template_id=template_id))
+        
+        template_data = {
+            'id': template_id,
+            'name': request.form.get('name'),
+            'title': request.form.get('title'),
+            'subtitle': request.form.get('subtitle'),
+            'footer_text': request.form.get('footer_text', ''),
+            'font_size_title': int(request.form.get('font_size_title', 28)),
+            'font_size_subtitle': int(request.form.get('font_size_subtitle', 16)),
+            'font_size_module': int(request.form.get('font_size_module', 22)),
+            'font_size_date': int(request.form.get('font_size_date', 12)),
+            'margin_top': int(request.form.get('margin_top', 100)),
+            'margin_subtitle': int(request.form.get('margin_subtitle', 200)),
+            'margin_module': int(request.form.get('margin_module', 250)),
+            'margin_date': int(request.form.get('margin_date', 350)),
+            'margin_footer': int(request.form.get('margin_footer', 450)),
+            'background_color': request.form.get('background_color', '#FFFFFF'),
+            'text_color': request.form.get('text_color', '#000000'),
+            'is_default': bool(request.form.get('is_default'))
+        }
+        
+        if not template_data['name'] or not template_data['title']:
+            flash('Name and title are required', 'error')
+            return redirect(url_for('admin_edit_certificate_template', template_id=template_id))
+        
+        save_certificate_template(template_data)
+        flash('Certificate template updated successfully', 'success')
+        return redirect(url_for('admin_certificate_templates'))
+    
+    config = load_config()
+    return render_template('admin/certificate_template_form.html', 
+                         config=config,
+                         template=template,
+                         action='Edit')
+
+@app.route('/admin/certificate-template/<template_id>/delete', methods=['POST'])
+@require_admin
+def admin_delete_certificate_template(template_id):
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
+    success, message = delete_certificate_template(template_id)
+    
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'error': message}), 400
+
+@app.route('/admin/certificate-template/<template_id>/set-default', methods=['POST'])
+@require_admin
+def admin_set_default_certificate_template(template_id):
+    if not validate_csrf_token():
+        return jsonify({'error': 'Invalid CSRF token'}), 403
+    
+    template = get_certificate_template(template_id)
+    
+    if not template:
+        return jsonify({'error': 'Template not found'}), 404
+    
+    # Update template to set as default
+    template['is_default'] = 1
+    save_certificate_template(template)
+    
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
