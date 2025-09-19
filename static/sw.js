@@ -1,45 +1,29 @@
-const CACHE_NAME = 'tutorial-platform-v7';
-const urlsToCache = [
-  '/',
-  '/static/css/style.css',
-  '/static/js/main.js',
-  '/static/icons/icon-192.png',
-  '/static/icons/icon-512.png',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'
-];
+// Service Worker with NO CACHING - always fetch fresh content
+// Caching removed to ensure fresh content loading as requested
 
 self.addEventListener('install', function(event) {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        return cache.addAll(urlsToCache);
-      })
-  );
+  // Skip waiting to activate immediately
   self.skipWaiting();
 });
 
 self.addEventListener('fetch', function(event) {
+  // Always fetch from network, no cache checking
   event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      }
-    )
+    fetch(event.request).catch(function(error) {
+      console.log('Fetch failed, but no cache fallback:', error);
+      throw error;
+    })
   );
 });
 
 self.addEventListener('activate', function(event) {
+  // Clear any existing caches
   event.waitUntil(
     caches.keys().then(function(cacheNames) {
       return Promise.all(
         cacheNames.map(function(cacheName) {
-          if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
-          }
+          console.log('Deleting cache:', cacheName);
+          return caches.delete(cacheName);
         })
       );
     })

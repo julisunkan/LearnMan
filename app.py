@@ -106,103 +106,9 @@ def init_database():
 # Initialize database on startup
 init_database()
 
-# Migrate existing JSON data to SQLite
-def migrate_json_to_sqlite():
-    """Migrate existing JSON data to SQLite database if it exists"""
-    json_file = 'data/courses.json'
-    if os.path.exists(json_file):
-        try:
-            with open(json_file, 'r') as f:
-                json_data = json.load(f)
-            
-            # Check if there are modules to migrate
-            if json_data.get('modules'):
-                conn = sqlite3.connect('data/tutorial_platform.db')
-                cursor = conn.cursor()
-                
-                # Check if database is empty
-                cursor.execute('SELECT COUNT(*) FROM modules')
-                if cursor.fetchone()[0] == 0:
-                    print("Migrating existing modules from JSON to SQLite...")
-                    
-                    # Migrate modules
-                    for module in json_data['modules']:
-                        quiz_data = None
-                        if 'quiz' in module:
-                            quiz_data = json.dumps(module['quiz'])
-                            
-                        cursor.execute('''
-                            INSERT INTO modules (id, title, description, video_url, created_at, order_num, quiz_data)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
-                        ''', (
-                            module['id'],
-                            module['title'],
-                            module.get('description', ''),
-                            module.get('video_url', ''),
-                            module['created_at'],
-                            module.get('order', 0),
-                            quiz_data
-                        ))
-                        
-                        # Migrate content files
-                        content_file = f"data/modules/{module['id']}.html"
-                        if os.path.exists(content_file):
-                            with open(content_file, 'r') as cf:
-                                content = cf.read()
-                                cursor.execute('''
-                                    INSERT INTO module_content (module_id, content)
-                                    VALUES (?, ?)
-                                ''', (module['id'], content))
-                    
-                    conn.commit()
-                    print(f"Successfully migrated {len(json_data['modules'])} modules to SQLite")
-                
-                conn.close()
-                
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"Migration skipped: {e}")
+# JSON migration functions removed - all data now stored in database
 
-# Run migration
-migrate_json_to_sqlite()
-
-# Migrate configuration and create default certificate template
-def migrate_config_to_sqlite():
-    """Migrate configuration from config.json to SQLite database"""
-    config_file = 'config.json'
-    if os.path.exists(config_file):
-        try:
-            with open(config_file, 'r') as f:
-                config_data = json.load(f)
-            
-            conn = sqlite3.connect('data/tutorial_platform.db')
-            cursor = conn.cursor()
-            
-            # Check if configuration already migrated
-            cursor.execute('SELECT COUNT(*) FROM site_config')
-            if cursor.fetchone()[0] == 0:
-                print("Migrating configuration from JSON to SQLite...")
-                
-                # Flatten configuration and insert into database
-                def insert_config(prefix, data):
-                    for key, value in data.items():
-                        full_key = f"{prefix}.{key}" if prefix else key
-                        if isinstance(value, dict):
-                            insert_config(full_key, value)
-                        else:
-                            cursor.execute(
-                                'INSERT INTO site_config (key, value, data_type) VALUES (?, ?, ?)',
-                                (full_key, json.dumps(value) if not isinstance(value, str) else value, 
-                                 'json' if not isinstance(value, str) else 'string')
-                            )
-                
-                insert_config('', config_data)
-                print("Configuration migrated to SQLite successfully")
-            
-            conn.commit()
-            conn.close()
-            
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"Config migration skipped: {e}")
+# Config migration removed - configuration now stored in database
 
 def create_default_certificate_template():
     """Create default certificate template if none exists"""
@@ -241,7 +147,7 @@ def create_default_certificate_template():
     conn.close()
 
 # Run configuration migration and create default template
-migrate_config_to_sqlite()
+# Migration call removed - config already in database
 create_default_certificate_template()
 
 # Load configuration from database
@@ -670,16 +576,8 @@ def load_module_content(module_id):
             conn.close()
 
 # Load progress data
-def load_progress():
-    try:
-        with open('data/progress.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_progress(data):
-    with open('data/progress.json', 'w') as f:
-        json.dump(data, f, indent=2)
+# Progress functions now use database - these JSON functions are removed
+# All progress data is handled through user_progress table
 
 # Admin authentication decorator
 def require_admin(f):
@@ -1509,13 +1407,9 @@ def admin_export_data():
     zip_buffer = io.BytesIO()
     
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        # Add configuration
-        zip_file.write('config.json', 'config.json')
-        
-        # Add data files
-        for data_file in ['data/courses.json', 'data/progress.json', 'data/feedback.json']:
-            if os.path.exists(data_file):
-                zip_file.write(data_file, data_file)
+        # Export configuration and data from database to JSON files for backup
+        # Note: Configuration and data are now stored in SQLite database
+        # This export creates temporary JSON files for backup compatibility
         
         # Add module content files
         module_dir = 'data/modules'

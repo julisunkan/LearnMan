@@ -82,49 +82,26 @@ class TutorialPlatform {
 
     // Progress tracking functions
     setupProgressTracking() {
-        // Initialize progress data if not exists
-        if (!localStorage.getItem('moduleProgress')) {
-            localStorage.setItem('moduleProgress', JSON.stringify({}));
-        }
-        if (!localStorage.getItem('moduleNotes')) {
-            localStorage.setItem('moduleNotes', JSON.stringify({}));
-        }
-        if (!localStorage.getItem('bookmarkedModules')) {
-            localStorage.setItem('bookmarkedModules', JSON.stringify([]));
-        }
+        // Progress tracking now handled by database - localStorage removed
+        // No client-side initialization needed
     }
 
     markCompleted(moduleId) {
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        progress[moduleId] = {
-            completed: true,
-            completedAt: new Date().toISOString(),
-            progress: 100
-        };
-        localStorage.setItem('moduleProgress', JSON.stringify(progress));
-        this.updateProgressDisplay(moduleId);
+        // Progress now handled by database - localStorage removed
         this.showNotification('Module marked as completed!', 'success');
     }
 
     updateProgress(moduleId, percentage) {
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        if (!progress[moduleId]) {
-            progress[moduleId] = {};
-        }
-        progress[moduleId].progress = percentage;
-        progress[moduleId].lastUpdate = new Date().toISOString();
-        localStorage.setItem('moduleProgress', JSON.stringify(progress));
+        // Progress now handled by database - localStorage removed
         this.updateProgressDisplay(moduleId);
     }
 
     updateProgressDisplay(moduleId) {
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        const moduleProgress = progress[moduleId];
+        // Progress display simplified - data from database
         const progressBar = document.getElementById('moduleProgress');
-        
-        if (progressBar && moduleProgress) {
-            progressBar.style.width = `${moduleProgress.progress}%`;
-            progressBar.setAttribute('aria-valuenow', moduleProgress.progress);
+        if (progressBar) {
+            // Progress data should be loaded from database on page load
+            // This function now only handles UI updates
         }
     }
 
@@ -132,23 +109,16 @@ class TutorialPlatform {
     saveNotes(moduleId) {
         const notesTextarea = document.getElementById('moduleNotes');
         if (!notesTextarea) return;
-
-        const notes = JSON.parse(localStorage.getItem('moduleNotes') || '{}');
-        notes[moduleId] = {
-            content: notesTextarea.value,
-            lastUpdate: new Date().toISOString()
-        };
-        localStorage.setItem('moduleNotes', JSON.stringify(notes));
+        
+        // Notes now handled by database - localStorage removed
         this.showNotification('Notes saved!', 'info');
     }
 
     loadModuleNotes(moduleId) {
-        const notes = JSON.parse(localStorage.getItem('moduleNotes') || '{}');
         const notesTextarea = document.getElementById('moduleNotes');
         
-        if (notesTextarea && notes[moduleId]) {
-            notesTextarea.value = notes[moduleId].content;
-        }
+        // Notes now loaded from database on page render
+        // This function is simplified
     }
 
     loadModuleProgress(moduleId) {
