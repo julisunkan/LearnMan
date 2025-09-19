@@ -637,29 +637,37 @@ def update_module_in_db(module):
 
 def save_module_content(module_id, content):
     """Save module content to database"""
-    conn = sqlite3.connect('data/tutorial_platform.db')
-    conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        INSERT OR REPLACE INTO module_content (module_id, content)
-        VALUES (?, ?)
-    ''', (module_id, content))
-    
-    conn.commit()
-    conn.close()
+    conn = None
+    try:
+        conn = sqlite3.connect('data/tutorial_platform.db')
+        conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT OR REPLACE INTO module_content (module_id, content)
+            VALUES (?, ?)
+        ''', (module_id, content))
+        
+        conn.commit()
+    finally:
+        if conn:
+            conn.close()
 
 def load_module_content(module_id):
     """Load module content from database"""
-    conn = sqlite3.connect('data/tutorial_platform.db')
-    conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
-    cursor = conn.cursor()
-    
-    cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
-    result = cursor.fetchone()
-    
-    conn.close()
-    return result[0] if result else None
+    conn = None
+    try:
+        conn = sqlite3.connect('data/tutorial_platform.db')
+        conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
+        result = cursor.fetchone()
+        
+        return result[0] if result else None
+    finally:
+        if conn:
+            conn.close()
 
 # Load progress data
 def load_progress():
@@ -1244,14 +1252,14 @@ def admin_new_module():
             'order': 0
         }
         
-        # Save module content to database
-        if content:
-            save_module_content(module_id, content)
-        
-        # Add module to courses data
+        # Add module to courses data first (this creates the module in database)
         courses_data = load_courses()
         courses_data['modules'].append(module_data)
         save_courses(courses_data)
+        
+        # Save module content to database (after module exists)
+        if content:
+            save_module_content(module_id, content)
         
         flash('Module created successfully', 'success')
         return redirect(url_for('admin_dashboard'))
