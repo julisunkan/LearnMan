@@ -517,7 +517,7 @@ class TutorialPlatform {
                                     <small class="text-muted">Score: ${data.progress}%</small>
                                     <div>
                                         <a href="/module/${moduleId}" class="btn btn-outline-primary btn-sm me-2">View Module</a>
-                                        <a href="/certificate/${moduleId}" class="btn btn-primary btn-sm" download>Download Certificate</a>
+                                        <a href="/certificate/${moduleId}" class="btn btn-primary btn-sm">Download Certificate</a>
                                     </div>
                                 </div>
                             </div>

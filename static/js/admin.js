@@ -477,11 +477,8 @@ async function deleteModule(moduleId) {
 }
 
 function exportData() {
-    // Create a download link for exporting data
-    const link = document.createElement('a');
-    link.href = '/admin/export';
-    link.download = `tutorial_platform_export_${new Date().toISOString().split('T')[0]}.zip`;
-    link.click();
+    // Initiate server-side download by navigating to the export endpoint
+    window.location.href = '/admin/export';
 }
 
 // Initialize admin panel when DOM is loaded
