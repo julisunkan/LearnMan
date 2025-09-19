@@ -1294,9 +1294,9 @@ def admin_edit_module(module_id):
         module['description'] = request.form.get('description', module['description'])
         module['video_url'] = request.form.get('video_url', module.get('video_url', ''))
         
-        content = request.form.get('content')
-        if content:
-            save_module_content(module_id, content)
+        # Only save content if the form includes the content field
+        if 'content' in request.form:
+            save_module_content(module_id, request.form.get('content', ''))
         
         save_courses(courses_data)
         flash('Module updated successfully', 'success')
