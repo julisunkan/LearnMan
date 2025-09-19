@@ -1147,7 +1147,7 @@ def scrape_url():
                 content_for_ai = text[:2000] if len(text) > 2000 else text
                 
                 response = openai_client.chat.completions.create(
-                    model="gpt-5",
+                    model="gpt-4o",
                     messages=[
                         {
                             "role": "system",
@@ -1302,13 +1302,8 @@ def admin_edit_module(module_id):
         flash('Module updated successfully', 'success')
         return redirect(url_for('admin_dashboard'))
     
-    # Load module content
-    content_file = f"data/modules/{module_id}.html"
-    try:
-        with open(content_file, 'r') as f:
-            module['content'] = f.read()
-    except FileNotFoundError:
-        module['content'] = ''
+    # Load module content from database
+    module['content'] = load_module_content(module_id) or ''
     
     config = load_config()
     return render_template('admin/module_form.html', 
