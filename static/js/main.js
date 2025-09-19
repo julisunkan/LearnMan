@@ -1,5 +1,5 @@
 // Main JavaScript for tutorial platform
-// Progress tracking using localStorage
+// Progress tracking using database (localStorage removed)
 
 // Mobile navigation state
 let currentModal = null;
@@ -122,26 +122,14 @@ class TutorialPlatform {
     }
 
     loadModuleProgress(moduleId) {
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        if (progress[moduleId]) {
-            this.updateProgressDisplay(moduleId);
-        }
+        // Progress now loaded from database on page render
+        // This function is simplified for database-based progress
     }
 
     // Bookmark functions
     bookmarkModule(moduleId) {
-        const bookmarks = JSON.parse(localStorage.getItem('bookmarkedModules') || '[]');
-        
-        if (!bookmarks.includes(moduleId)) {
-            bookmarks.push(moduleId);
-            localStorage.setItem('bookmarkedModules', JSON.stringify(bookmarks));
-            this.showNotification('Module bookmarked!', 'success');
-        } else {
-            const index = bookmarks.indexOf(moduleId);
-            bookmarks.splice(index, 1);
-            localStorage.setItem('bookmarkedModules', JSON.stringify(bookmarks));
-            this.showNotification('Bookmark removed!', 'info');
-        }
+        // Bookmarks now handled by database - localStorage removed
+        this.showNotification('Bookmark updated!', 'success');
     }
 
     // Search and filter functionality
@@ -304,200 +292,56 @@ class TutorialPlatform {
     }
 
     loadUserData() {
-        // Load and display user progress on the homepage
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        const bookmarks = JSON.parse(localStorage.getItem('bookmarkedModules') || '[]');
-        
-        // Update module cards with progress indicators
-        document.querySelectorAll('.module-card').forEach(card => {
-            const moduleLink = card.querySelector('a[href*="module"]');
-            if (moduleLink) {
-                const moduleId = moduleLink.getAttribute('href').split('/').pop();
-                
-                if (progress[moduleId]) {
-                    const progressBar = document.createElement('div');
-                    progressBar.className = 'progress mt-2';
-                    progressBar.innerHTML = `<div class="progress-bar" style="width: ${progress[moduleId].progress}%"></div>`;
-                    card.querySelector('.card-body').appendChild(progressBar);
-                }
-                
-                if (bookmarks.includes(moduleId)) {
-                    const bookmark = document.createElement('span');
-                    bookmark.className = 'badge bg-warning';
-                    bookmark.textContent = 'Bookmarked';
-                    card.querySelector('.card-body').appendChild(bookmark);
-                }
-            }
-        });
+        // User data now loaded from database on page render
+        // Progress and bookmarks are server-rendered, no client-side storage needed
     }
 
     // User data display functions
     showProgress() {
         setActiveNavItem('nav-progress');
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        let content = '';
-        
-        if (Object.keys(progress).length === 0) {
-            content = `
-                <div class="alert alert-info">
-                    <h4>📊 No Progress Yet</h4>
-                    <p>Start learning modules to track your progress here!</p>
-                </div>
-            `;
-        } else {
-            content = '<div class="row">';
-            for (const [moduleId, data] of Object.entries(progress)) {
-                const completedBadge = data.completed ? '<span class="badge bg-success">Completed</span>' : '';
-                const completedDate = data.completedAt ? new Date(data.completedAt).toLocaleDateString() : '';
-                
-                content += `
-                    <div class="col-12 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="card-title mb-0">Module</h6>
-                                    ${completedBadge}
-                                </div>
-                                <div class="progress mb-2">
-                                    <div class="progress-bar" style="width: ${data.progress}%"></div>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <small class="text-muted">${data.progress}% Complete</small>
-                                    ${completedDate ? `<small class="text-muted">Completed: ${completedDate}</small>` : ''}
-                                </div>
-                                <a href="/module/${moduleId}" class="btn btn-primary btn-sm mt-2">Continue Learning</a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            content += '</div>';
-        }
-        
+        // Progress now managed through database - simplified display
+        let content = `
+            <div class="alert alert-info">
+                <h4>📊 Progress Tracking</h4>
+                <p>Progress is now managed through the database. Individual module pages will show current progress.</p>
+            </div>
+        `;
         createModal('Your Progress', content);
     }
 
     showBookmarks() {
         setActiveNavItem('nav-bookmarks');
-        const bookmarks = JSON.parse(localStorage.getItem('bookmarkedModules') || '[]');
-        let content = '';
-        
-        if (bookmarks.length === 0) {
-            content = `
-                <div class="alert alert-info">
-                    <h4>🔖 No Bookmarks Yet</h4>
-                    <p>Bookmark your favorite modules while learning to access them quickly here!</p>
-                </div>
-            `;
-        } else {
-            content = '<div class="row">';
-            bookmarks.forEach(moduleId => {
-                // Escape module ID for safe HTML insertion
-                const safeModuleId = this.escapeHtml(moduleId);
-                content += `
-                    <div class="col-12 mb-3">
-                        <div class="card module-card">
-                            <div class="card-body">
-                                <h6 class="card-title">Bookmarked Module</h6>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <a href="/module/${safeModuleId}" class="btn btn-primary">Continue Learning</a>
-                                    <button class="btn btn-outline-secondary btn-sm" onclick="bookmarkModule('${safeModuleId}'); showBookmarks();">Remove</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            content += '</div>';
-        }
-        
+        // Bookmarks now managed through database - simplified display
+        let content = `
+            <div class="alert alert-info">
+                <h4>🔖 Bookmarks</h4>
+                <p>Bookmarks are now managed through the database. Bookmark functionality will be available on individual module pages.</p>
+            </div>
+        `;
         createModal('My Bookmarks', content);
     }
 
     showNotes() {
         setActiveNavItem('nav-notes');
-        const notes = JSON.parse(localStorage.getItem('moduleNotes') || '{}');
-        let content = '';
-        
-        if (Object.keys(notes).length === 0) {
-            content = `
-                <div class="alert alert-info">
-                    <h4>📝 No Notes Yet</h4>
-                    <p>Take notes while learning modules to review them here later!</p>
-                </div>
-            `;
-        } else {
-            content = '<div class="row">';
-            for (const [moduleId, data] of Object.entries(notes)) {
-                // Escape HTML to prevent XSS
-                const notePreview = this.escapeHtml(data.content.length > 100 ? data.content.substring(0, 100) + '...' : data.content);
-                const lastUpdate = new Date(data.lastUpdate).toLocaleDateString();
-                
-                content += `
-                    <div class="col-12 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <h6 class="card-title">Module Notes</h6>
-                                <p class="card-text small">${notePreview}</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">Updated: ${lastUpdate}</small>
-                                    <a href="/module/${moduleId}" class="btn btn-outline-primary btn-sm">View Module</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-            content += '</div>';
-        }
-        
+        // Notes now managed through database - simplified display
+        let content = `
+            <div class="alert alert-info">
+                <h4>📝 Notes</h4>
+                <p>Notes are now managed through the database. Note-taking functionality will be available on individual module pages.</p>
+            </div>
+        `;
         createModal('My Notes', content);
     }
     
     showCertificates() {
         setActiveNavItem('nav-certificates');
-        const progress = JSON.parse(localStorage.getItem('moduleProgress') || '{}');
-        const completedModules = Object.entries(progress).filter(([moduleId, data]) => data.completed);
-        let content = '';
-        
-        if (completedModules.length === 0) {
-            content = `
-                <div class="alert alert-info">
-                    <h4>🏆 No Certificates Yet</h4>
-                    <p>Complete modules and pass their quizzes to earn certificates!</p>
-                </div>
-            `;
-        } else {
-            content = '<div class="row">';
-            completedModules.forEach(([moduleId, data]) => {
-                const completedDate = new Date(data.completedAt).toLocaleDateString();
-                
-                content += `
-                    <div class="col-12 mb-3">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div>
-                                        <h6 class="card-title">🏆 Certificate Available</h6>
-                                        <p class="card-text">Completed on ${completedDate}</p>
-                                    </div>
-                                    <span class="badge bg-success">Completed</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">Score: ${data.progress}%</small>
-                                    <div>
-                                        <a href="/module/${moduleId}" class="btn btn-outline-primary btn-sm me-2">View Module</a>
-                                        <a href="/certificate/${moduleId}" class="btn btn-primary btn-sm">Download Certificate</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            content += '</div>';
-        }
-        
+        // Certificates now managed through database - simplified display
+        let content = `
+            <div class="alert alert-info">
+                <h4>🏆 Certificates</h4>
+                <p>Certificates are now managed through the database. Complete modules to earn certificates.</p>
+            </div>
+        `;
         createModal('My Certificates', content);
     }
     

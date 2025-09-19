@@ -13,7 +13,7 @@ import markdown
 import trafilatura
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file, make_response
 from werkzeug.utils import secure_filename
 
 # Blueprint integration reference for OpenAI
@@ -596,6 +596,19 @@ def generate_csrf_token():
 
 app.jinja_env.globals.update(csrf_token=generate_csrf_token)
 
+# Global no-cache policy for all dynamic content
+@app.after_request
+def add_no_cache_headers(response):
+    """Add no-cache headers to all dynamic responses to ensure fresh content loading"""
+    # Only add no-cache headers to dynamic content, not static assets
+    if (response.content_type and 
+        (response.content_type.startswith('text/html') or 
+         response.content_type.startswith('application/json'))):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
 # Validate CSRF token
 def validate_csrf_token():
     token = session.get('csrf_token')
@@ -800,9 +813,14 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
 def index():
     courses_data = load_courses()
     config = load_config()
-    return render_template('index.html', 
-                         courses=courses_data,
-                         config=config)
+    response = make_response(render_template('index.html', 
+                                           courses=courses_data,
+                                           config=config))
+    # Add no-cache headers to ensure fresh content loading
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/module/<module_id>')
 def module_detail(module_id):
@@ -824,9 +842,14 @@ def module_detail(module_id):
         module['content'] = "<p>No content available for this module.</p>"
     
     config = load_config()
-    return render_template('module.html', 
-                         module=module,
-                         config=config)
+    response = make_response(render_template('module.html', 
+                                           module=module,
+                                           config=config))
+    # Add no-cache headers to ensure fresh content loading
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/quiz/<module_id>')
 def quiz(module_id):
