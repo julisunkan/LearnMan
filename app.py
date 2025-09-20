@@ -208,7 +208,7 @@ def create_default_certificate_template():
             template_id,
             'Default Certificate',
             'Certificate of Completion',
-            'This certifies that you have successfully completed:',
+            'This certifies that {FULL NAME} have successfully completed:',
             'Official Transcript', # Default header_text
             'Congratulations on your achievement!', # Default footer_text
             'Your Company', # Default company_name
@@ -809,7 +809,7 @@ app.jinja_env.globals.update(csrf_token=generate_csrf_token)
 @app.after_request
 def add_no_cache_headers(response):
     """Add no-cache headers to all dynamic responses to ensure fresh content loading"""
-    # Only add no-cache headers to dynamic content, not static assets
+    # Only add no-cache headers to static assets
     if (response.content_type and 
         (response.content_type.startswith('text/html') or 
          response.content_type.startswith('application/json'))):
@@ -1227,7 +1227,7 @@ def generate_certificate(module_id):
             logo_path = template['logo_url'].lstrip('/') # Assuming logo_url is relative to static folder
             if not os.path.exists(logo_path): # If the URL path doesn't exist, try treating it as a file path directly
                 logo_path = os.path.join('static', template['logo_url'].lstrip('/'))
-            
+
             if os.path.exists(logo_path):
                 c.drawInlineImage(logo_path, 
                                   (width - template['logo_width']) / 2, 
@@ -1287,14 +1287,14 @@ def generate_certificate(module_id):
             if os.path.exists(sig_path):
                 # Position signature based on margin_signature
                 signature_base_y = height - template['margin_signature']
-                
+
                 # Draw the signature image
                 c.drawInlineImage(sig_path,
                                   (width - template['signature_width']) / 2,
                                   signature_base_y - template['signature_height'],
                                   width=template['signature_width'],
                                   height=template['signature_height'])
-                
+
                 # Draw signature name and title below the signature image
                 c.setFont("Helvetica-Bold", template['font_size_signature'])
                 name_y = signature_base_y - template['signature_height'] - 15 # Position below image

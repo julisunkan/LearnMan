@@ -28,42 +28,42 @@ function closeModal() {
 // Create modal template safely using DOM APIs
 function createModal(title, contentHtml) {
     closeModal();
-    
+
     const modal = document.createElement('div');
     modal.className = 'mobile-modal';
-    
+
     // Create header
     const header = document.createElement('div');
     header.className = 'mobile-modal-header';
-    
+
     const titleEl = document.createElement('h2');
     titleEl.className = 'mobile-modal-title';
     titleEl.textContent = title;
-    
+
     const closeBtn = document.createElement('button');
     closeBtn.className = 'modal-close-btn';
     closeBtn.textContent = '×';
     closeBtn.onclick = closeModal;
-    
+
     header.appendChild(titleEl);
     header.appendChild(closeBtn);
-    
+
     // Create content area
     const content = document.createElement('div');
     content.className = 'mobile-modal-content';
     content.innerHTML = contentHtml; // Still using innerHTML but content is pre-sanitized
-    
+
     modal.appendChild(header);
     modal.appendChild(content);
-    
+
     document.body.appendChild(modal);
     currentModal = modal;
-    
+
     // Show modal with animation
     setTimeout(() => {
         modal.classList.add('show');
     }, 10);
-    
+
     return modal;
 }
 
@@ -109,14 +109,14 @@ class TutorialPlatform {
     saveNotes(moduleId) {
         const notesTextarea = document.getElementById('moduleNotes');
         if (!notesTextarea) return;
-        
+
         // Notes now handled by database - localStorage removed
         this.showNotification('Notes saved!', 'info');
     }
 
     loadModuleNotes(moduleId) {
         const notesTextarea = document.getElementById('moduleNotes');
-        
+
         // Notes now loaded from database on page render
         // This function is simplified
     }
@@ -148,7 +148,7 @@ class TutorialPlatform {
         moduleCards.forEach(card => {
             const title = card.querySelector('.card-title').textContent.toLowerCase();
             const description = card.querySelector('.card-text').textContent.toLowerCase();
-            
+
             if (title.includes(searchTerm) || description.includes(searchTerm)) {
                 card.parentElement.style.display = 'block';
             } else {
@@ -164,7 +164,7 @@ class TutorialPlatform {
             if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
                 this.navigateModules(e.key === 'ArrowRight');
             }
-            
+
             // Spacebar for video play/pause
             if (e.key === ' ' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                 const video = document.querySelector('video');
@@ -198,7 +198,7 @@ class TutorialPlatform {
             } else {
                 nextIndex = currentIndex === 0 ? moduleLinks.length - 1 : currentIndex - 1;
             }
-            
+
             if (moduleLinks[nextIndex]) {
                 window.location.href = moduleLinks[nextIndex].getAttribute('href');
             }
@@ -212,7 +212,7 @@ class TutorialPlatform {
 
         const formData = new FormData(form);
         const answers = {};
-        
+
         for (let [key, value] of formData.entries()) {
             answers[key] = value;
         }
@@ -246,7 +246,7 @@ class TutorialPlatform {
 
         const passedClass = results.passed ? 'success' : 'danger';
         const passedText = results.passed ? 'Passed' : 'Failed';
-        
+
         resultsDiv.innerHTML = `
             <div class="alert alert-${passedClass}">
                 <h4>${passedText}!</h4>
@@ -270,14 +270,14 @@ class TutorialPlatform {
             opacity: 0;
             transition: opacity 0.3s ease;
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Fade in
         setTimeout(() => {
             notification.style.opacity = '1';
         }, 10);
-        
+
         // Remove after 3 seconds
         setTimeout(() => {
             notification.style.opacity = '0';
@@ -332,7 +332,7 @@ class TutorialPlatform {
         `;
         createModal('My Notes', content);
     }
-    
+
     showCertificates() {
         setActiveNavItem('nav-certificates');
         // Certificates now managed through database - simplified display
@@ -344,7 +344,7 @@ class TutorialPlatform {
         `;
         createModal('My Certificates', content);
     }
-    
+
     // Utility function to escape HTML and prevent XSS
     escapeHtml(text) {
         const map = {
@@ -361,26 +361,26 @@ class TutorialPlatform {
 // Initialize the platform when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.tutorialPlatform = new TutorialPlatform();
-    
+
     // Expose methods globally to ensure onclick handlers work
     window.showProgress = function() {
         if (window.tutorialPlatform) {
             window.tutorialPlatform.showProgress();
         }
     };
-    
+
     window.showBookmarks = function() {
         if (window.tutorialPlatform) {
             window.tutorialPlatform.showBookmarks();
         }
     };
-    
+
     window.showNotes = function() {
         if (window.tutorialPlatform) {
             window.tutorialPlatform.showNotes();
         }
     };
-    
+
     window.showCertificates = function() {
         if (window.tutorialPlatform) {
             window.tutorialPlatform.showCertificates();
@@ -448,3 +448,40 @@ document.addEventListener('DOMContentLoaded', function() {
         setActiveNavItem('nav-home');
     }
 });
+
+// Global variables
+let currentUser = 'anonymous';
+
+// Certificate download function
+function downloadCertificate(moduleId) {
+    const fullName = document.getElementById('fullName').value.trim();
+
+    if (!fullName) {
+        alert('Please enter your full name');
+        return;
+    }
+
+    if (fullName.length > 100) {
+        alert('Name is too long (maximum 100 characters)');
+        return;
+    }
+
+    // Check for invalid characters
+    if (/[<>"'&]/.test(fullName)) {
+        alert('Name contains invalid characters');
+        return;
+    }
+
+    // Generate certificate URL with name parameter
+    const url = `/certificate/${moduleId}?name=${encodeURIComponent(fullName)}`;
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('certificateModal'));
+    modal.hide();
+
+    // Clear the form
+    document.getElementById('fullName').value = '';
+
+    // Open certificate in new window/tab
+    window.open(url, '_blank');
+}
