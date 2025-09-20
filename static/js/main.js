@@ -455,22 +455,29 @@ let currentUser = 'anonymous';
 // Certificate download function
 function downloadCertificate(moduleId) {
     const fullName = document.getElementById('fullName').value.trim();
+    const messageEl = document.getElementById('certificateMessage');
+
+    // Clear previous messages
+    hideMessage(messageEl);
 
     if (!fullName) {
-        alert('Please enter your full name');
+        showMessage(messageEl, 'Please enter your full name', 'danger');
         return;
     }
 
     if (fullName.length > 100) {
-        alert('Name is too long (maximum 100 characters)');
+        showMessage(messageEl, 'Name is too long (maximum 100 characters)', 'danger');
         return;
     }
 
     // Check for invalid characters
     if (/[<>"'&]/.test(fullName)) {
-        alert('Name contains invalid characters');
+        showMessage(messageEl, 'Name contains invalid characters', 'danger');
         return;
     }
+
+    // Show success message
+    showMessage(messageEl, 'Generating certificate...', 'success');
 
     // Generate certificate URL with name parameter
     const url = `/certificate/${moduleId}?name=${encodeURIComponent(fullName)}`;
@@ -479,5 +486,20 @@ function downloadCertificate(moduleId) {
     window.open(url, '_blank');
 
     // Clear the form after successful download
-    document.getElementById('fullName').value = '';
+    setTimeout(() => {
+        document.getElementById('fullName').value = '';
+        showMessage(messageEl, 'Certificate downloaded successfully!', 'success');
+        setTimeout(() => hideMessage(messageEl), 3000);
+    }, 1000);
+}
+
+// Helper functions for inline messaging
+function showMessage(element, message, type = 'info') {
+    element.className = `alert alert-${type}`;
+    element.textContent = message;
+    element.classList.remove('d-none');
+}
+
+function hideMessage(element) {
+    element.classList.add('d-none');
 }

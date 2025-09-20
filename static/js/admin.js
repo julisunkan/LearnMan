@@ -46,15 +46,33 @@ class AdminPanel {
         }
     }
 
+    // Helper functions for inline messaging
+    showMessage(element, message, type = 'info') {
+        if (element) {
+            element.className = `alert alert-${type}`;
+            element.textContent = message;
+            element.classList.remove('d-none');
+        }
+    }
+
+    hideMessage(element) {
+        if (element) {
+            element.classList.add('d-none');
+        }
+    }
+
     async handleUrlImport(e) {
         e.preventDefault();
         const formData = new FormData(e.target);
         const url = formData.get('import_url');
+        const messageEl = document.getElementById('importMessage');
 
         if (!url) {
-            alert('Please enter a URL');
+            this.showMessage(messageEl, 'Please enter a URL', 'danger');
             return;
         }
+
+        this.showMessage(messageEl, 'Importing content...', 'info');
 
         try {
             const response = await fetch('/api/scrape-url', {
@@ -69,13 +87,14 @@ class AdminPanel {
             const data = await response.json();
 
             if (response.ok) {
+                this.hideMessage(messageEl);
                 // Create modal to show imported content
                 this.showImportPreview(data);
             } else {
-                alert('Error importing content: ' + data.error);
+                this.showMessage(messageEl, 'Error importing content: ' + data.error, 'danger');
             }
         } catch (error) {
-            alert('Error importing content: ' + error.message);
+            this.showMessage(messageEl, 'Error importing content: ' + error.message, 'danger');
         }
     }
 
@@ -155,21 +174,21 @@ class AdminPanel {
 
             if (response.ok) {
                 // Show success message with image URL
-                alert(`Image uploaded successfully! URL: ${data.url}`);
+                this.showMessage(document.getElementById('importMessage'), `Image uploaded successfully! URL: ${data.url}`, 'success');
                 
                 // Copy URL to clipboard
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(data.url);
-                    alert('Image URL copied to clipboard');
+                    this.showMessage(document.getElementById('importMessage'), 'Image URL copied to clipboard', 'success');
                 }
                 
                 // Reset form
                 e.target.reset();
             } else {
-                alert('Error uploading image: ' + data.error);
+                this.showMessage(document.getElementById('importMessage'), 'Error uploading image: ' + data.error, 'danger');
             }
         } catch (error) {
-            alert('Error uploading image: ' + error.message);
+            this.showMessage(document.getElementById('importMessage'), 'Error uploading image: ' + error.message, 'danger');
         }
     }
 
@@ -187,10 +206,10 @@ class AdminPanel {
                 bootstrap.Modal.getInstance(document.getElementById('importPreviewModal')).hide();
                 window.location.reload();
             } else {
-                alert('Error creating module');
+                this.showMessage(document.getElementById('modulesMessage'), 'Error creating module', 'danger');
             }
         } catch (error) {
-            alert('Error creating module: ' + error.message);
+            this.showMessage(document.getElementById('modulesMessage'), 'Error creating module: ' + error.message, 'danger');
         }
     }
 
@@ -219,12 +238,13 @@ class AdminPanel {
             if (response.ok) {
                 // Update UI immediately without page refresh
                 this.updateBasicConfigUI(config);
-                alert('Configuration updated successfully');
+                this.showMessage(document.getElementById('configMessage'), 'Configuration updated successfully', 'success');
+                setTimeout(() => this.hideMessage(document.getElementById('configMessage')), 3000);
             } else {
-                alert('Error updating configuration');
+                this.showMessage(document.getElementById('configMessage'), 'Error updating configuration', 'danger');
             }
         } catch (error) {
-            alert('Error updating configuration: ' + error.message);
+            this.showMessage(document.getElementById('configMessage'), 'Error updating configuration: ' + error.message, 'danger');
         }
     }
 
@@ -266,12 +286,13 @@ class AdminPanel {
             if (response.ok) {
                 // Update UI immediately without page refresh
                 this.updateHeaderCustomizationUI(headerCustomization);
-                alert('Header customization updated successfully!');
+                this.showMessage(document.getElementById('configMessage'), 'Header customization updated successfully!', 'success');
+                setTimeout(() => this.hideMessage(document.getElementById('configMessage')), 3000);
             } else {
-                alert('Error updating header customization');
+                this.showMessage(document.getElementById('configMessage'), 'Error updating header customization', 'danger');
             }
         } catch (error) {
-            alert('Error updating header customization: ' + error.message);
+            this.showMessage(document.getElementById('configMessage'), 'Error updating header customization: ' + error.message, 'danger');
         }
     }
 
@@ -289,12 +310,12 @@ class AdminPanel {
             });
 
             if (!response.ok) {
-                alert('Error reordering modules');
+                this.showMessage(document.getElementById('modulesMessage'), 'Error reordering modules', 'danger');
                 // Reload page to restore original order
                 window.location.reload();
             }
         } catch (error) {
-            alert('Error reordering modules: ' + error.message);
+            this.showMessage(document.getElementById('modulesMessage'), 'Error reordering modules: ' + error.message, 'danger');
             window.location.reload();
         }
     }
@@ -469,10 +490,10 @@ async function deleteModule(moduleId) {
             // Remove the row from the table
             document.querySelector(`tr[data-module-id="${moduleId}"]`).remove();
         } else {
-            alert('Error deleting module');
+            adminPanel.showMessage(document.getElementById('modulesMessage'), 'Error deleting module', 'danger');
         }
     } catch (error) {
-        alert('Error deleting module: ' + error.message);
+        adminPanel.showMessage(document.getElementById('modulesMessage'), 'Error deleting module: ' + error.message, 'danger');
     }
 }
 
