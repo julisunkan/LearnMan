@@ -254,10 +254,10 @@ def load_config():
             "header_customization": {
                 "title_color": "#000000",
                 "title_size": "1.5rem",
-                "nav_text_color": "#000000", 
+                "nav_text_color": "#000000",
                 "nav_text_size": "1rem",
                 "background_gradient_start": "#ff006e",
-                "background_gradient_middle": "#00f5ff", 
+                "background_gradient_middle": "#00f5ff",
                 "background_gradient_end": "#ffbe0b",
                 "show_emoji": True,
                 "custom_emoji": "✨"
@@ -303,7 +303,7 @@ def save_config(config):
             else:
                 cursor.execute(
                     'INSERT INTO site_config (key, value, data_type) VALUES (?, ?, ?)',
-                    (full_key, json.dumps(value) if not isinstance(value, str) else value, 
+                    (full_key, json.dumps(value) if not isinstance(value, str) else value,
                      'json' if not isinstance(value, str) else 'string')
                 )
 
@@ -607,7 +607,7 @@ def load_courses():
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT id, title, description, video_url, created_at, order_num, quiz_data 
+        SELECT id, title, description, video_url, created_at, order_num, quiz_data
         FROM modules ORDER BY order_num, created_at
     ''')
 
@@ -722,13 +722,13 @@ def save_module_content(module_id, content):
             # Update existing content
             if has_timestamps:
                 cursor.execute('''
-                    UPDATE module_content 
+                    UPDATE module_content
                     SET content = ?, updated_at = ?
                     WHERE module_id = ?
                 ''', (content, current_time, module_id))
             else:
                 cursor.execute('''
-                    UPDATE module_content 
+                    UPDATE module_content
                     SET content = ?
                     WHERE module_id = ?
                 ''', (content, module_id))
@@ -810,8 +810,8 @@ app.jinja_env.globals.update(csrf_token=generate_csrf_token)
 def add_no_cache_headers(response):
     """Add no-cache headers to all dynamic responses to ensure fresh content loading"""
     # Only add no-cache headers to static assets
-    if (response.content_type and 
-        (response.content_type.startswith('text/html') or 
+    if (response.content_type and
+        (response.content_type.startswith('text/html') or
          response.content_type.startswith('application/json'))):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
@@ -887,7 +887,7 @@ def is_safe_url(url):
                 # Block cloud metadata endpoints and other dangerous IPs
                 dangerous_ips = [
                     '169.254.169.254',  # AWS/GCP metadata
-                    '100.100.100.200',  # Alibaba metadata  
+                    '100.100.100.200',  # Alibaba metadata
                     '192.0.0.192',      # Oracle metadata
                     '::1',              # IPv6 localhost
                     'fd00:ec2::254',    # AWS IPv6 metadata
@@ -1022,7 +1022,7 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
 def index():
     courses_data = load_courses()
     config = load_config()
-    response = make_response(render_template('index.html', 
+    response = make_response(render_template('index.html',
                                            courses=courses_data,
                                            config=config))
     # Add no-cache headers to ensure fresh content loading
@@ -1053,7 +1053,7 @@ def module_detail(module_id):
         module['content'] = Markup("<p>No content available for this module.</p>")
 
     config = load_config()
-    response = make_response(render_template('module.html', 
+    response = make_response(render_template('module.html',
                                            module=module,
                                            config=config))
     # Add no-cache headers to ensure fresh content loading
@@ -1077,7 +1077,7 @@ def quiz(module_id):
         return redirect(url_for('index'))
 
     config = load_config()
-    return render_template('quiz.html', 
+    return render_template('quiz.html',
                          module=module,
                          config=config)
 
@@ -1148,11 +1148,11 @@ def after_request(response):
 def generate_certificate(module_id):
     # Get the user's full name from query parameter
     full_name = request.args.get('name', '').strip()
-    
+
     if not full_name:
         flash('Full name is required for certificate generation', 'error')
         return redirect(url_for('module_detail', module_id=module_id))
-    
+
     # Validate full name (basic security check)
     if len(full_name) > 100 or any(char in full_name for char in ['<', '>', '"', "'", '&']):
         flash('Invalid name provided', 'error')
@@ -1235,11 +1235,11 @@ def generate_certificate(module_id):
     text_color = hex_to_rgb(template['text_color'])
     accent_color = (0.2, 0.4, 0.8)  # Professional blue
     gold_color = (0.8, 0.6, 0.2)    # Gold accent
-    
+
     # Set background with gradient effect (simulated with overlays)
     c.setFillColorRGB(*bg_color)
     c.rect(0, 0, width, height, fill=True, stroke=False)
-    
+
     # Add subtle gradient overlay
     c.setFillColorRGB(bg_color[0] + 0.02, bg_color[1] + 0.02, bg_color[2] + 0.02)
     c.rect(0, height * 0.7, width, height * 0.3, fill=True, stroke=False)
@@ -1249,16 +1249,16 @@ def generate_certificate(module_id):
     c.setStrokeColorRGB(*accent_color)
     c.setLineWidth(3)
     c.rect(border_margin, border_margin, width - 2*border_margin, height - 2*border_margin, fill=False, stroke=True)
-    
+
     # Inner decorative border
     inner_margin = border_margin + 10
     c.setStrokeColorRGB(*gold_color)
     c.setLineWidth(1)
     c.rect(inner_margin, inner_margin, width - 2*inner_margin, height - 2*inner_margin, fill=False, stroke=True)
-    
+
     # Corner decorations
     corner_size = 20
-    for x, y in [(border_margin, border_margin), (width - border_margin, border_margin), 
+    for x, y in [(border_margin, border_margin), (width - border_margin, border_margin),
                  (border_margin, height - border_margin), (width - border_margin, height - border_margin)]:
         c.setFillColorRGB(*gold_color)
         c.circle(x, y, 4, fill=True, stroke=False)
@@ -1274,13 +1274,13 @@ def generate_certificate(module_id):
 
     # Professional header section
     header_y_start = height - 120
-    
+
     # Company Logo (centered, professional placement)
     logo_drawn = False
     if template.get('logo_url') and template['logo_url'].strip():
         try:
             logo_url = template['logo_url'].strip()
-            
+
             if not logo_url.startswith(('http://', 'https://')):
                 # Local file path
                 if logo_url.startswith('/static/'):
@@ -1289,12 +1289,12 @@ def generate_certificate(module_id):
                     logo_path = logo_url
                 else:
                     logo_path = f'static/{logo_url}'
-                
+
                 if os.path.exists(logo_path):
                     logo_x = (width - template['logo_width']) / 2
                     logo_y = header_y_start
                     c.drawInlineImage(logo_path, logo_x, logo_y,
-                                      width=template['logo_width'], 
+                                      width=template['logo_width'],
                                       height=template['logo_height'])
                     logo_drawn = True
                     header_y_start -= template['logo_height'] + 20
@@ -1328,7 +1328,7 @@ def generate_certificate(module_id):
     c.setFillColorRGB(*accent_color)
     title_text = template['title'].upper()
     c.drawCentredString(width / 2, title_y, title_text)
-    
+
     # Add decorative underline for title
     c.setStrokeColorRGB(*gold_color)
     c.setLineWidth(1)
@@ -1347,47 +1347,43 @@ def generate_certificate(module_id):
         if len(parts) == 2:
             # Draw first part
             c.drawCentredString(width / 2, subtitle_y, parts[0].strip())
-            
-            # User's full name (prominent display with elegant styling)
+
+            # User's full name in requested format (prominent display with elegant styling)
             name_y = subtitle_y - 50
-            c.setFont("Times-Bold", template['font_size_module'] + 6)
-            c.setFillColorRGB(*gold_color)
-            
-            # Add decorative quotes around name
-            full_name_display = f'"{full_name}"'
-            c.drawCentredString(width / 2, name_y, full_name_display)
-            
-            # Decorative flourish under name
-            c.setStrokeColorRGB(*gold_color)
-            c.setLineWidth(1)
-            name_width = c.stringWidth(full_name_display, "Times-Bold", template['font_size_module'] + 6)
-            flourish_y = name_y - 12
-            flourish_start = (width - name_width) / 2 - 20
-            flourish_end = (width + name_width) / 2 + 20
-            c.line(flourish_start, flourish_y, flourish_end, flourish_y)
-            
-            # Small decorative elements
-            c.setFillColorRGB(*gold_color)
-            c.circle(flourish_start - 5, flourish_y, 2, fill=True)
-            c.circle(flourish_end + 5, flourish_y, 2, fill=True)
-            
+            c.setFont("Times-Bold", template['font_size_module'] + 4)
+            c.setFillColorRGB(*accent_color)
+
+            # Format: "Module Completed by {FULL NAME}"
+            completion_text = f"Module Completed by {full_name}"
+            c.drawCentredString(width / 2, name_y, completion_text)
+
             # Draw second part
             c.setFont("Times-Roman", template['font_size_subtitle'] + 2)
             c.setFillColorRGB(*text_color)
             c.drawCentredString(width / 2, name_y - 50, parts[1].strip())
-            
+
             module_y = name_y - 100
         else:
             c.drawCentredString(width / 2, subtitle_y, subtitle_text)
-            module_y = subtitle_y - 80
+            # User's full name in requested format (prominent display with elegant styling)
+            name_y = subtitle_y - 50
+            c.setFont("Times-Bold", template['font_size_module'] + 4)
+            c.setFillColorRGB(*accent_color)
+
+            # Format: "Module Completed by {FULL NAME}"
+            completion_text = f"Module Completed by {full_name}"
+            c.drawCentredString(width / 2, name_y, completion_text)
+            module_y = name_y - 80
     else:
         c.drawCentredString(width / 2, subtitle_y, subtitle_text)
-        # User's full name without subtitle integration
+        # User's full name in requested format (prominent display with elegant styling)
         name_y = subtitle_y - 50
-        c.setFont("Times-Bold", template['font_size_module'] + 6)
-        c.setFillColorRGB(*gold_color)
-        full_name_display = f'"{full_name}"'
-        c.drawCentredString(width / 2, name_y, full_name_display)
+        c.setFont("Times-Bold", template['font_size_module'] + 4)
+        c.setFillColorRGB(*accent_color)
+
+        # Format: "Module Completed by {FULL NAME}"
+        completion_text = f"Module Completed by {full_name}"
+        c.drawCentredString(width / 2, name_y, completion_text)
         module_y = name_y - 80
 
     # Module name with elegant presentation
@@ -1405,7 +1401,7 @@ def generate_certificate(module_id):
 
     # Footer section
     footer_y = date_y - 80
-    
+
     # Footer text with professional styling
     if template.get('footer_text') and template['footer_text'].strip():
         c.setFont("Times-Italic", template['font_size_footer'] + 1)
@@ -1417,17 +1413,17 @@ def generate_certificate(module_id):
     if template.get('signature_name') and template['signature_name'].strip():
         signature_area_y = 120  # Fixed position from bottom
         signature_x = width - 200  # Right side positioning
-        
+
         # Signature box with border
         c.setStrokeColorRGB(*accent_color)
         c.setLineWidth(1)
         c.rect(signature_x - 20, signature_area_y - 10, 180, 80, fill=False, stroke=True)
-        
+
         # "Authorized Signature" label
         c.setFont("Helvetica", 8)
         c.setFillColorRGB(0.5, 0.5, 0.5)
         c.drawCentredString(signature_x + 70, signature_area_y + 55, "AUTHORIZED SIGNATURE")
-        
+
         # Signature image or line
         signature_image_drawn = False
         if template.get('signature_url') and template['signature_url'].strip():
@@ -1440,7 +1436,7 @@ def generate_certificate(module_id):
                         sig_path = sig_url
                     else:
                         sig_path = f'static/{sig_url}'
-                    
+
                     if os.path.exists(sig_path):
                         c.drawInlineImage(sig_path, signature_x, signature_area_y + 15,
                                           width=template['signature_width'],
@@ -1459,7 +1455,7 @@ def generate_certificate(module_id):
         c.setFont("Times-Bold", template['font_size_signature'] + 2)
         c.setFillColorRGB(*text_color)
         c.drawCentredString(signature_x + 70, signature_area_y + 10, template['signature_name'])
-        
+
         if template.get('signature_title') and template['signature_title'].strip():
             c.setFont("Times-Roman", template['font_size_signature'])
             c.setFillColorRGB(0.4, 0.4, 0.4)
@@ -1471,7 +1467,7 @@ def generate_certificate(module_id):
     c.setLineWidth(2)
     deco_y = 60
     c.line(width/2 - 150, deco_y, width/2 + 150, deco_y)
-    
+
     # Small decorative flourishes
     for i in range(-2, 3):
         x_pos = width/2 + i * 60
@@ -1608,7 +1604,7 @@ def admin_logout():
 def admin_dashboard():
     courses_data = load_courses()
     config = load_config()
-    return render_template('admin/dashboard.html', 
+    return render_template('admin/dashboard.html',
                          courses=courses_data,
                          config=config)
 
@@ -1655,7 +1651,7 @@ def admin_new_module():
         return redirect(url_for('admin_dashboard'))
 
     config = load_config()
-    return render_template('admin/module_form.html', 
+    return render_template('admin/module_form.html',
                          config=config,
                          module=None,
                          action='Create')
@@ -1696,7 +1692,7 @@ def admin_edit_module(module_id):
     module['content'] = load_module_content(module_id) or ''
 
     config = load_config()
-    return render_template('admin/module_form.html', 
+    return render_template('admin/module_form.html',
                          config=config,
                          module=module,
                          action='Edit')
@@ -1934,7 +1930,7 @@ def admin_export_data():
 def admin_certificate_templates():
     templates = get_certificate_templates()
     config = load_config()
-    return render_template('admin/certificate_templates.html', 
+    return render_template('admin/certificate_templates.html',
                          templates=templates,
                          config=config)
 
@@ -1988,7 +1984,7 @@ def admin_new_certificate_template():
         return redirect(url_for('admin_certificate_templates'))
 
     config = load_config()
-    return render_template('admin/certificate_template_form.html', 
+    return render_template('admin/certificate_template_form.html',
                          config=config,
                          template=None,
                          action='Create')
@@ -2050,7 +2046,7 @@ def admin_edit_certificate_template(template_id):
         return redirect(url_for('admin_certificate_templates'))
 
     config = load_config()
-    return render_template('admin/certificate_template_form.html', 
+    return render_template('admin/certificate_template_form.html',
                          config=config,
                          template=template,
                          action='Edit')
