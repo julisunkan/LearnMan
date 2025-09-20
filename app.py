@@ -205,6 +205,19 @@ def migrate_json_to_database():
                 print(f"Migrating {len(json_data['modules'])} modules from JSON to database...")
                 save_courses(json_data)
                 print("Migration completed successfully")
+                
+                # Also migrate module content files if they exist
+                for module in json_data['modules']:
+                    module_id = module['id']
+                    content_file_path = f'data/modules/{module_id}.html'
+                    if os.path.exists(content_file_path):
+                        try:
+                            with open(content_file_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            save_module_content(module_id, content)
+                            print(f"Migrated content for module {module_id}")
+                        except Exception as e:
+                            print(f"Error migrating content for module {module_id}: {e}")
         except Exception as e:
             print(f"Error migrating JSON data: {e}")
 
