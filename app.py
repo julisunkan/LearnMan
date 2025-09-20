@@ -133,36 +133,47 @@ def init_database():
             name TEXT NOT NULL,
             title TEXT NOT NULL DEFAULT 'Certificate of Completion',
             subtitle TEXT DEFAULT 'This certifies that you have successfully completed:',
-            header_text TEXT DEFAULT '',
-            footer_text TEXT DEFAULT '',
-            company_name TEXT DEFAULT '',
-            logo_url TEXT DEFAULT '',
-            signature_url TEXT DEFAULT '',
-            signature_name TEXT DEFAULT '',
-            signature_title TEXT DEFAULT '',
             font_size_title INTEGER DEFAULT 24,
             font_size_subtitle INTEGER DEFAULT 16,
             font_size_module INTEGER DEFAULT 20,
             font_size_date INTEGER DEFAULT 12,
-            font_size_header INTEGER DEFAULT 14,
-            font_size_footer INTEGER DEFAULT 10,
-            font_size_signature INTEGER DEFAULT 12,
             margin_top INTEGER DEFAULT 100,
             margin_subtitle INTEGER DEFAULT 200,
             margin_module INTEGER DEFAULT 250,
             margin_date INTEGER DEFAULT 350,
-            margin_footer INTEGER DEFAULT 400,
-            margin_signature INTEGER DEFAULT 420,
-            logo_width INTEGER DEFAULT 100,
-            logo_height INTEGER DEFAULT 50,
-            signature_width INTEGER DEFAULT 150,
-            signature_height INTEGER DEFAULT 40,
             background_color TEXT DEFAULT '#ffffff',
             text_color TEXT DEFAULT '#000000',
             is_default INTEGER DEFAULT 0,
             created_at TEXT NOT NULL
         )
     ''')
+
+    # Add new columns if they don't exist (database migration)
+    new_columns = [
+        ('header_text', 'TEXT DEFAULT ""'),
+        ('footer_text', 'TEXT DEFAULT ""'),
+        ('company_name', 'TEXT DEFAULT ""'),
+        ('logo_url', 'TEXT DEFAULT ""'),
+        ('signature_url', 'TEXT DEFAULT ""'),
+        ('signature_name', 'TEXT DEFAULT ""'),
+        ('signature_title', 'TEXT DEFAULT ""'),
+        ('font_size_header', 'INTEGER DEFAULT 14'),
+        ('font_size_footer', 'INTEGER DEFAULT 10'),
+        ('font_size_signature', 'INTEGER DEFAULT 12'),
+        ('margin_footer', 'INTEGER DEFAULT 400'),
+        ('margin_signature', 'INTEGER DEFAULT 420'),
+        ('logo_width', 'INTEGER DEFAULT 100'),
+        ('logo_height', 'INTEGER DEFAULT 50'),
+        ('signature_width', 'INTEGER DEFAULT 150'),
+        ('signature_height', 'INTEGER DEFAULT 40')
+    ]
+
+    for column_name, column_def in new_columns:
+        try:
+            cursor.execute(f'ALTER TABLE certificate_templates ADD COLUMN {column_name} {column_def}')
+        except sqlite3.OperationalError:
+            # Column already exists, skip
+            pass
 
     conn.commit()
     conn.close()
@@ -1189,7 +1200,7 @@ def generate_certificate(module_id):
 
     # Generate PDF certificate using template
     filename = f"certificate_{module_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    filepath = f"static/resources/{filename}"
+    filepath = os.path.join("static", "resources", filename)
 
     c = canvas.Canvas(filepath, pagesize=letter)
     width, height = letter
