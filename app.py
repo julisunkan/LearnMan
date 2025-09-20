@@ -183,6 +183,34 @@ def init_database():
 # Initialize database on startup
 init_database()
 
+# Migrate JSON data to database if needed
+def migrate_json_to_database():
+    """Migrate existing JSON data to SQLite database if it exists and database is empty"""
+    json_file_path = 'data/courses.json'
+    
+    # Check if database has any modules
+    conn = sqlite3.connect('data/tutorial_platform.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM modules')
+    module_count = cursor.fetchone()[0]
+    conn.close()
+    
+    # If database is empty and JSON file exists, migrate data
+    if module_count == 0 and os.path.exists(json_file_path):
+        try:
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+            
+            if json_data.get('modules'):
+                print(f"Migrating {len(json_data['modules'])} modules from JSON to database...")
+                save_courses(json_data)
+                print("Migration completed successfully")
+        except Exception as e:
+            print(f"Error migrating JSON data: {e}")
+
+# Run migration
+migrate_json_to_database()
+
 # JSON migration functions removed - all data now stored in database
 
 # Config migration removed - configuration now stored in database
