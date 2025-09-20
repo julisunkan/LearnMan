@@ -74,63 +74,15 @@ class TutorialPlatform {
 
     init() {
         // Initialize platform features
-        this.setupProgressTracking();
         this.setupKeyboardNavigation();
         this.setupSearchFiltering();
-        this.loadUserData();
     }
 
-    // Progress tracking functions
-    setupProgressTracking() {
-        // Progress tracking now handled by database - localStorage removed
-        // No client-side initialization needed
-    }
-
-    markCompleted(moduleId) {
-        // Progress now handled by database - localStorage removed
-        this.showNotification('Module marked as completed!', 'success');
-    }
-
-    updateProgress(moduleId, percentage) {
-        // Progress now handled by database - localStorage removed
-        this.updateProgressDisplay(moduleId);
-    }
-
-    updateProgressDisplay(moduleId) {
-        // Progress display simplified - data from database
-        const progressBar = document.getElementById('moduleProgress');
-        if (progressBar) {
-            // Progress data should be loaded from database on page load
-            // This function now only handles UI updates
-        }
-    }
-
-    // Note-taking functions
-    saveNotes(moduleId) {
-        const notesTextarea = document.getElementById('moduleNotes');
-        if (!notesTextarea) return;
-
-        // Notes now handled by database - localStorage removed
-        this.showNotification('Notes saved!', 'info');
-    }
-
-    loadModuleNotes(moduleId) {
-        const notesTextarea = document.getElementById('moduleNotes');
-
-        // Notes now loaded from database on page render
-        // This function is simplified
-    }
-
-    loadModuleProgress(moduleId) {
-        // Progress now loaded from database on page render
-        // This function is simplified for database-based progress
-    }
-
-    // Bookmark functions
-    bookmarkModule(moduleId) {
-        // Bookmarks now handled by database - localStorage removed
-        this.showNotification('Bookmark updated!', 'success');
-    }
+    // Progress tracking functions removed - functionality no longer needed
+    
+    // Note-taking functions removed - functionality no longer needed
+    
+    // Bookmark functions removed - functionality no longer needed
 
     // Search and filter functionality
     setupSearchFiltering() {
@@ -291,47 +243,9 @@ class TutorialPlatform {
         return document.querySelector('meta[name="csrf-token"]')?.content || '';
     }
 
-    loadUserData() {
-        // User data now loaded from database on page render
-        // Progress and bookmarks are server-rendered, no client-side storage needed
-    }
+    
 
-    // User data display functions
-    showProgress() {
-        setActiveNavItem('nav-progress');
-        // Progress now managed through database - simplified display
-        let content = `
-            <div class="alert alert-info">
-                <h4>📊 Progress Tracking</h4>
-                <p>Progress is now managed through the database. Individual module pages will show current progress.</p>
-            </div>
-        `;
-        createModal('Your Progress', content);
-    }
-
-    showBookmarks() {
-        setActiveNavItem('nav-bookmarks');
-        // Bookmarks now managed through database - simplified display
-        let content = `
-            <div class="alert alert-info">
-                <h4>🔖 Bookmarks</h4>
-                <p>Bookmarks are now managed through the database. Bookmark functionality will be available on individual module pages.</p>
-            </div>
-        `;
-        createModal('My Bookmarks', content);
-    }
-
-    showNotes() {
-        setActiveNavItem('nav-notes');
-        // Notes now managed through database - simplified display
-        let content = `
-            <div class="alert alert-info">
-                <h4>📝 Notes</h4>
-                <p>Notes are now managed through the database. Note-taking functionality will be available on individual module pages.</p>
-            </div>
-        `;
-        createModal('My Notes', content);
-    }
+    // User data display functions removed - functionality no longer needed
 
     showCertificates() {
         setActiveNavItem('nav-certificates');
@@ -363,24 +277,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.tutorialPlatform = new TutorialPlatform();
 
     // Expose methods globally to ensure onclick handlers work
-    window.showProgress = function() {
-        if (window.tutorialPlatform) {
-            window.tutorialPlatform.showProgress();
-        }
-    };
-
-    window.showBookmarks = function() {
-        if (window.tutorialPlatform) {
-            window.tutorialPlatform.showBookmarks();
-        }
-    };
-
-    window.showNotes = function() {
-        if (window.tutorialPlatform) {
-            window.tutorialPlatform.showNotes();
-        }
-    };
-
     window.showCertificates = function() {
         if (window.tutorialPlatform) {
             window.tutorialPlatform.showCertificates();
@@ -389,50 +285,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Global functions for inline event handlers
-function markCompleted(moduleId) {
-    window.tutorialPlatform.markCompleted(moduleId);
-}
-
-function saveNotes(moduleId) {
-    window.tutorialPlatform.saveNotes(moduleId);
-}
-
-function loadModuleNotes(moduleId) {
-    window.tutorialPlatform.loadModuleNotes(moduleId);
-}
-
-function loadModuleProgress(moduleId) {
-    window.tutorialPlatform.loadModuleProgress(moduleId);
-}
-
-function bookmarkModule(moduleId) {
-    window.tutorialPlatform.bookmarkModule(moduleId);
-}
-
 function filterModules() {
     window.tutorialPlatform.filterModules();
 }
 
 function submitQuiz(moduleId) {
     window.tutorialPlatform.submitQuiz(moduleId);
-}
-
-function showProgress() {
-    if (window.tutorialPlatform) {
-        window.tutorialPlatform.showProgress();
-    }
-}
-
-function showBookmarks() {
-    if (window.tutorialPlatform) {
-        window.tutorialPlatform.showBookmarks();
-    }
-}
-
-function showNotes() {
-    if (window.tutorialPlatform) {
-        window.tutorialPlatform.showNotes();
-    }
 }
 
 function showCertificates() {

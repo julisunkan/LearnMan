@@ -794,9 +794,7 @@ def load_module_content(module_id):
         if conn:
             conn.close()
 
-# Load progress data
-# Progress functions now use database - these JSON functions are removed
-# All progress data is handled through user_progress table
+# Progress, notes, and bookmarks functionality removed
 
 # Admin authentication decorator
 def require_admin(f):

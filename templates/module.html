@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-9">
+    <div class="col-12">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
@@ -27,11 +27,9 @@
         </div>
         
         <div class="mt-4">
-            <button class="btn btn-success" onclick="markCompleted('{{ module.id }}')">Mark as Completed</button>
             {% if module.quiz %}
                 <a href="{{ url_for('quiz', module_id=module.id) }}" class="btn btn-primary">Take Quiz</a>
             {% endif %}
-            <button class="btn btn-outline-secondary" onclick="bookmarkModule('{{ module.id }}')">Bookmark</button>
         </div>
         
         <!-- Inline Certificate Download Form -->
@@ -51,44 +49,11 @@
             </form>
         </div>
     </div>
-    
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-header">
-                <h5>Progress</h5>
-            </div>
-            <div class="card-body">
-                <div class="progress mb-2">
-                    <div class="progress-bar" role="progressbar" style="width: 0%" id="moduleProgress"></div>
-                </div>
-                <small class="text-muted">Module completion progress</small>
-            </div>
-        </div>
-    </div>
 </div>
 
-<!-- Notes section moved to bottom of page -->
-<div class="row mt-5">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5>Notes</h5>
-            </div>
-            <div class="card-body">
-                <textarea class="form-control" rows="6" placeholder="Take notes for this module..." id="moduleNotes" onchange="saveNotes('{{ module.id }}')"></textarea>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // Load module notes on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadModuleNotes('{{ module.id }}');
-        loadModuleProgress('{{ module.id }}');
-    });
-</script>
 {% endblock %}
