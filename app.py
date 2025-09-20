@@ -854,17 +854,16 @@ def generate_csrf_token():
 
 app.jinja_env.globals.update(csrf_token=generate_csrf_token)
 
-# Global no-cache policy for all dynamic content
+# Global no-cache policy for all content
 @app.after_request
 def add_no_cache_headers(response):
-    """Add no-cache headers to all dynamic responses to ensure fresh content loading"""
-    # Only add no-cache headers to static assets
-    if (response.content_type and
-        (response.content_type.startswith('text/html') or
-         response.content_type.startswith('application/json'))):
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
+    """Add no-cache headers to all responses to ensure fresh content loading"""
+    # Add no-cache headers to ALL responses (HTML, JSON, CSS, JS, images)
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache' 
+    response.headers['Expires'] = '0'
+    response.headers['Last-Modified'] = '0'
+    response.headers['ETag'] = ''
     return response
 
 # Validate CSRF token
@@ -1182,6 +1181,55 @@ def service_worker():
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
+    return response
+
+@app.route('/clear-cache')
+def clear_cache():
+    """Manual cache clearing endpoint"""
+    response = make_response('''
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cache Cleared</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        <h1>Cache Clearing...</h1>
+        <p>All caches are being cleared. You will be redirected to the homepage.</p>
+        <script>
+            // Clear all possible caches
+            if ('serviceWorker' in navigator) {
+                caches.keys().then(function(cacheNames) {
+                    return Promise.all(
+                        cacheNames.map(function(cacheName) {
+                            return caches.delete(cacheName);
+                        })
+                    );
+                });
+            }
+            
+            if (typeof(Storage) !== "undefined") {
+                localStorage.clear();
+                sessionStorage.clear();
+            }
+            
+            // Redirect after clearing
+            setTimeout(function() {
+                window.location.href = '/';
+            }, 2000);
+        </script>
+    </body>
+    </html>
+    ''')
+    
+    # Ensure this response is never cached
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    response.headers['Last-Modified'] = '0'
+    response.headers['ETag'] = ''
+    
     return response
 
 # Add cache control for static files in development

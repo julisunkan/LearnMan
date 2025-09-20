@@ -26,7 +26,33 @@ self.addEventListener('activate', function(event) {
           return caches.delete(cacheName);
         })
       );
+    }).then(function() {
+      // Force refresh all clients
+      return self.clients.matchAll().then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ action: 'clearCache' });
+        });
+      });
     })
   );
   self.clients.claim();
+});
+
+// Add cache clearing message handler
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.action === 'clearAllCaches') {
+    event.waitUntil(
+      caches.keys().then(function(cacheNames) {
+        return Promise.all(
+          cacheNames.map(function(cacheName) {
+            console.log('Force deleting cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      }).then(function() {
+        // Notify client that cache is cleared
+        event.ports[0].postMessage({ success: true });
+      })
+    );
+  }
 });

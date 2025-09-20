@@ -310,6 +310,37 @@ document.addEventListener('DOMContentLoaded', function() {
 // Global variables
 let currentUser = 'anonymous';
 
+// Cache clearing functionality
+function clearAllCaches() {
+    // Clear service worker caches
+    if ('serviceWorker' in navigator && 'caches' in window) {
+        caches.keys().then(function(cacheNames) {
+            return Promise.all(
+                cacheNames.map(function(cacheName) {
+                    console.log('Clearing cache:', cacheName);
+                    return caches.delete(cacheName);
+                })
+            );
+        }).then(function() {
+            console.log('All caches cleared');
+            // Force reload page to get fresh content
+            window.location.reload(true);
+        });
+    }
+    
+    // Clear localStorage
+    if (typeof(Storage) !== "undefined") {
+        localStorage.clear();
+        console.log('LocalStorage cleared');
+    }
+    
+    // Clear sessionStorage
+    if (typeof(Storage) !== "undefined") {
+        sessionStorage.clear();
+        console.log('SessionStorage cleared');
+    }
+}
+
 // Certificate download function
 function downloadCertificate(moduleId) {
     const fullName = document.getElementById('fullName').value.trim();
