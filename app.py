@@ -1178,7 +1178,7 @@ def generate_certificate(module_id):
         default_template_data = {
             'name': 'Default Certificate',
             'title': 'Certificate of Completion',
-            'subtitle': 'This certifies that you have successfully completed:',
+            'subtitle': 'This certifies that {FULL NAME} have successfully completed:',
             'header_text': 'Official Transcript',
             'footer_text': 'Congratulations on your achievement!',
             'company_name': 'Your Company',
@@ -1210,9 +1210,15 @@ def generate_certificate(module_id):
         save_certificate_template(default_template_data)
         template = default_template_data
 
+    # Generate unique certificate number
+    cert_number = f"CERT-{datetime.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+
     # Generate PDF certificate using template
-    filename = f"certificate_{module_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+    filename = f"certificate_{full_name.replace(' ', '_')}_{module_id[:8]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     filepath = os.path.join("static", "resources", filename)
+
+    # Ensure resources directory exists
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
     c = canvas.Canvas(filepath, pagesize=letter)
     width, height = letter
@@ -1233,29 +1239,58 @@ def generate_certificate(module_id):
     text_color = hex_to_rgb(template['text_color'])
     c.setFillColorRGB(*text_color)
 
-    # Add Company Logo
-    if template.get('logo_url'):
-        try:
-            logo_path = template['logo_url'].lstrip('/') # Assuming logo_url is relative to static folder
-            if not os.path.exists(logo_path): # If the URL path doesn't exist, try treating it as a file path directly
-                logo_path = os.path.join('static', template['logo_url'].lstrip('/'))
+    # Add Certificate Number (top right corner)
+    c.setFont("Helvetica", 10)
+    c.drawRightString(width - 20, height - 20, f"Certificate No: {cert_number}")
 
-            if os.path.exists(logo_path):
-                c.drawInlineImage(logo_path, 
-                                  (width - template['logo_width']) / 2, 
-                                  height - template['margin_top'] - template['logo_height'],
-                                  width=template['logo_width'], 
-                                  height=template['logo_height'])
+    # Add Company Logo (if provided and exists)
+    logo_drawn = False
+    if template.get('logo_url') and template['logo_url'].strip():
+        try:
+            logo_url = template['logo_url'].strip()
+            
+            # Handle different URL formats
+            if logo_url.startswith(('http://', 'https://')):
+                # External URL - skip for security (don't download external images)
+                print(f"Warning: External logo URLs not supported for security: {logo_url}")
             else:
-                print(f"Warning: Logo not found at {logo_path}")
+                # Local file path
+                if logo_url.startswith('/static/'):
+                    logo_path = logo_url[1:]  # Remove leading slash
+                elif logo_url.startswith('static/'):
+                    logo_path = logo_url
+                else:
+                    logo_path = f'static/{logo_url}'
+                
+                if os.path.exists(logo_path):
+                    c.drawInlineImage(logo_path, 
+                                      (width - template['logo_width']) / 2, 
+                                      height - template['margin_top'],
+                                      width=template['logo_width'], 
+                                      height=template['logo_height'])
+                    logo_drawn = True
+                else:
+                    print(f"Warning: Logo file not found at {logo_path}")
         except Exception as e:
             print(f"Error drawing logo: {e}")
 
+    # Company name (if provided)
+    if template.get('company_name') and template['company_name'].strip():
+        c.setFont("Helvetica-Bold", template['font_size_header'])
+        company_y = height - 40 if not logo_drawn else height - template['margin_top'] - template['logo_height'] - 20
+        c.drawCentredString(width / 2, company_y, template['company_name'])
+
+    # Header text (if provided)
+    if template.get('header_text') and template['header_text'].strip():
+        c.setFont("Helvetica-Bold", template['font_size_header'])
+        header_y = height - 60 if not logo_drawn else height - template['margin_top'] - template['logo_height'] - 40
+        c.drawCentredString(width / 2, header_y, template['header_text'])
+
     # Certificate title
     c.setFont("Helvetica-Bold", template['font_size_title'])
-    text = template['title']
-    title_y = height - template['margin_top'] - (template['logo_height'] if template.get('logo_url') else 0) - (template['font_size_title'] * 0.5) # Adjust y based on logo
-    c.drawCentredString(width / 2, title_y, text)
+    title_text = template['title']
+    title_y = height - template['margin_top'] - (template['logo_height'] + 40 if logo_drawn else 0)
+    c.drawCentredString(width / 2, title_y, title_text)
 
     # Certificate subtitle (replace {FULL NAME} placeholder with actual name)
     c.setFont("Helvetica", template['font_size_subtitle'])
@@ -1265,60 +1300,73 @@ def generate_certificate(module_id):
 
     # Module name
     c.setFont("Helvetica-Bold", template['font_size_module'])
-    text = module['title']
+    module_text = f'"{module["title"]}"'
     module_y = height - template['margin_module']
-    c.drawCentredString(width / 2, module_y, text)
+    c.drawCentredString(width / 2, module_y, module_text)
 
     # Date
     c.setFont("Helvetica", template['font_size_date'])
-    text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
+    date_text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
     date_y = height - template['margin_date']
-    c.drawCentredString(width / 2, date_y, text)
-
-    # Header text (if provided)
-    if template.get('header_text'):
-        c.setFont("Helvetica-Bold", template['font_size_header'])
-        text = template['header_text']
-        header_y = height - template['margin_top'] / 2 # Position header above title
-        c.drawCentredString(width / 2, header_y, text)
+    c.drawCentredString(width / 2, date_y, date_text)
 
     # Footer text (if provided)
-    if template.get('footer_text'):
+    if template.get('footer_text') and template['footer_text'].strip():
         c.setFont("Helvetica", template['font_size_footer'])
-        text = template['footer_text']
+        footer_text = template['footer_text']
         footer_y = height - template['margin_footer']
-        c.drawCentredString(width / 2, footer_y, text)
+        c.drawCentredString(width / 2, footer_y, footer_text)
 
-    # Signature
-    if template.get('signature_url'):
-        try:
-            sig_path = template['signature_url'].lstrip('/')
-            if not os.path.exists(sig_path):
-                sig_path = os.path.join('static', template['signature_url'].lstrip('/'))
+    # Signature section (if provided)
+    if template.get('signature_name') and template['signature_name'].strip():
+        signature_x = width - 150  # Position on the right side
+        signature_base_y = height - template['margin_signature']
 
-            if os.path.exists(sig_path):
-                # Position signature based on margin_signature
-                signature_base_y = height - template['margin_signature']
+        # Draw signature image if provided and exists
+        signature_image_drawn = False
+        if template.get('signature_url') and template['signature_url'].strip():
+            try:
+                sig_url = template['signature_url'].strip()
+                
+                # Handle different URL formats
+                if sig_url.startswith(('http://', 'https://')):
+                    # External URL - skip for security
+                    print(f"Warning: External signature URLs not supported for security: {sig_url}")
+                else:
+                    # Local file path
+                    if sig_url.startswith('/static/'):
+                        sig_path = sig_url[1:]  # Remove leading slash
+                    elif sig_url.startswith('static/'):
+                        sig_path = sig_url
+                    else:
+                        sig_path = f'static/{sig_url}'
+                    
+                    if os.path.exists(sig_path):
+                        c.drawInlineImage(sig_path,
+                                          signature_x,
+                                          signature_base_y - template['signature_height'],
+                                          width=template['signature_width'],
+                                          height=template['signature_height'])
+                        signature_image_drawn = True
+                    else:
+                        print(f"Warning: Signature file not found at {sig_path}")
+            except Exception as e:
+                print(f"Error drawing signature: {e}")
 
-                # Draw the signature image
-                c.drawInlineImage(sig_path,
-                                  (width - template['signature_width']) / 2,
-                                  signature_base_y - template['signature_height'],
-                                  width=template['signature_width'],
-                                  height=template['signature_height'])
+        # Draw signature line if no image
+        if not signature_image_drawn:
+            c.line(signature_x, signature_base_y - 20, signature_x + template['signature_width'], signature_base_y - 20)
 
-                # Draw signature name and title below the signature image
-                c.setFont("Helvetica-Bold", template['font_size_signature'])
-                name_y = signature_base_y - template['signature_height'] - 15 # Position below image
-                c.drawCentredString(width / 2, name_y, template['signature_name'])
+        # Draw signature name
+        c.setFont("Helvetica-Bold", template['font_size_signature'])
+        name_y = signature_base_y - (template['signature_height'] + 25 if signature_image_drawn else 35)
+        c.drawCentredString(signature_x + template['signature_width'] / 2, name_y, template['signature_name'])
 
-                c.setFont("Helvetica", template['font_size_signature'] - 1) # Slightly smaller for title
-                title_y = name_y - 15 # Position below name
-                c.drawCentredString(width / 2, title_y, template['signature_title'])
-            else:
-                print(f"Warning: Signature not found at {sig_path}")
-        except Exception as e:
-            print(f"Error drawing signature: {e}")
+        # Draw signature title if provided
+        if template.get('signature_title') and template['signature_title'].strip():
+            c.setFont("Helvetica", template['font_size_signature'] - 1)
+            title_y = name_y - 15
+            c.drawCentredString(signature_x + template['signature_width'] / 2, title_y, template['signature_title'])
 
     c.save()
 
