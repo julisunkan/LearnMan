@@ -1230,148 +1230,253 @@ def generate_certificate(module_id):
             return tuple(int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4))
         return (0, 0, 0)
 
-    # Set background color
+    # Professional color scheme
     bg_color = hex_to_rgb(template['background_color'])
+    text_color = hex_to_rgb(template['text_color'])
+    accent_color = (0.2, 0.4, 0.8)  # Professional blue
+    gold_color = (0.8, 0.6, 0.2)    # Gold accent
+    
+    # Set background with gradient effect (simulated with overlays)
     c.setFillColorRGB(*bg_color)
     c.rect(0, 0, width, height, fill=True, stroke=False)
+    
+    # Add subtle gradient overlay
+    c.setFillColorRGB(bg_color[0] + 0.02, bg_color[1] + 0.02, bg_color[2] + 0.02)
+    c.rect(0, height * 0.7, width, height * 0.3, fill=True, stroke=False)
+
+    # Professional border with corner decorations
+    border_margin = 30
+    c.setStrokeColorRGB(*accent_color)
+    c.setLineWidth(3)
+    c.rect(border_margin, border_margin, width - 2*border_margin, height - 2*border_margin, fill=False, stroke=True)
+    
+    # Inner decorative border
+    inner_margin = border_margin + 10
+    c.setStrokeColorRGB(*gold_color)
+    c.setLineWidth(1)
+    c.rect(inner_margin, inner_margin, width - 2*inner_margin, height - 2*inner_margin, fill=False, stroke=True)
+    
+    # Corner decorations
+    corner_size = 20
+    for x, y in [(border_margin, border_margin), (width - border_margin, border_margin), 
+                 (border_margin, height - border_margin), (width - border_margin, height - border_margin)]:
+        c.setFillColorRGB(*gold_color)
+        c.circle(x, y, 4, fill=True, stroke=False)
 
     # Set text color
-    text_color = hex_to_rgb(template['text_color'])
     c.setFillColorRGB(*text_color)
 
-    # Add Certificate Number (top right corner)
+    # Certificate Number (top right corner, professional styling)
     c.setFont("Helvetica", 10)
-    c.drawRightString(width - 20, height - 20, f"Certificate No: {cert_number}")
+    c.setFillColorRGB(0.5, 0.5, 0.5)  # Gray color for cert number
+    c.drawRightString(width - 50, height - 50, f"Certificate No: {cert_number}")
+    c.setFillColorRGB(*text_color)  # Reset to main text color
 
-    # Add Company Logo (if provided and exists)
+    # Professional header section
+    header_y_start = height - 120
+    
+    # Company Logo (centered, professional placement)
     logo_drawn = False
     if template.get('logo_url') and template['logo_url'].strip():
         try:
             logo_url = template['logo_url'].strip()
             
-            # Handle different URL formats
-            if logo_url.startswith(('http://', 'https://')):
-                # External URL - skip for security (don't download external images)
-                print(f"Warning: External logo URLs not supported for security: {logo_url}")
-            else:
+            if not logo_url.startswith(('http://', 'https://')):
                 # Local file path
                 if logo_url.startswith('/static/'):
-                    logo_path = logo_url[1:]  # Remove leading slash
+                    logo_path = logo_url[1:]
                 elif logo_url.startswith('static/'):
                     logo_path = logo_url
                 else:
                     logo_path = f'static/{logo_url}'
                 
                 if os.path.exists(logo_path):
-                    c.drawInlineImage(logo_path, 
-                                      (width - template['logo_width']) / 2, 
-                                      height - template['margin_top'],
+                    logo_x = (width - template['logo_width']) / 2
+                    logo_y = header_y_start
+                    c.drawInlineImage(logo_path, logo_x, logo_y,
                                       width=template['logo_width'], 
                                       height=template['logo_height'])
                     logo_drawn = True
-                else:
-                    print(f"Warning: Logo file not found at {logo_path}")
+                    header_y_start -= template['logo_height'] + 20
         except Exception as e:
             print(f"Error drawing logo: {e}")
 
-    # Company name (if provided)
+    # Company name with professional styling
     if template.get('company_name') and template['company_name'].strip():
-        c.setFont("Helvetica-Bold", template['font_size_header'])
-        company_y = height - 40 if not logo_drawn else height - template['margin_top'] - template['logo_height'] - 20
-        c.drawCentredString(width / 2, company_y, template['company_name'])
+        c.setFont("Helvetica-Bold", template['font_size_header'] + 2)
+        c.setFillColorRGB(*accent_color)
+        c.drawCentredString(width / 2, header_y_start, template['company_name'].upper())
+        c.setFillColorRGB(*text_color)
+        header_y_start -= 35
 
-    # Header text (if provided)
+    # Header text
     if template.get('header_text') and template['header_text'].strip():
-        c.setFont("Helvetica-Bold", template['font_size_header'])
-        header_y = height - 60 if not logo_drawn else height - template['margin_top'] - template['logo_height'] - 40
-        c.drawCentredString(width / 2, header_y, template['header_text'])
+        c.setFont("Helvetica", template['font_size_header'])
+        c.drawCentredString(width / 2, header_y_start, template['header_text'])
+        header_y_start -= 30
 
-    # Certificate title
-    c.setFont("Helvetica-Bold", template['font_size_title'])
-    title_text = template['title']
-    title_y = height - template['margin_top'] - (template['logo_height'] + 40 if logo_drawn else 0)
+    # Decorative line under header
+    line_y = header_y_start - 10
+    c.setStrokeColorRGB(*gold_color)
+    c.setLineWidth(2)
+    line_center = width / 2
+    c.line(line_center - 100, line_y, line_center + 100, line_y)
+
+    # Certificate title with enhanced typography
+    title_y = line_y - 60
+    c.setFont("Times-Bold", template['font_size_title'] + 8)
+    c.setFillColorRGB(*accent_color)
+    title_text = template['title'].upper()
     c.drawCentredString(width / 2, title_y, title_text)
+    
+    # Add decorative underline for title
+    c.setStrokeColorRGB(*gold_color)
+    c.setLineWidth(1)
+    title_width = c.stringWidth(title_text, "Times-Bold", template['font_size_title'] + 8)
+    underline_y = title_y - 8
+    c.line((width - title_width) / 2, underline_y, (width + title_width) / 2, underline_y)
 
-    # Certificate subtitle (replace {FULL NAME} placeholder with actual name)
-    c.setFont("Helvetica", template['font_size_subtitle'])
-    subtitle_text = template['subtitle'].replace('{FULL NAME}', full_name)
-    subtitle_y = height - template['margin_subtitle']
-    c.drawCentredString(width / 2, subtitle_y, subtitle_text)
+    # Certificate subtitle with better spacing
+    subtitle_y = title_y - 80
+    c.setFont("Times-Roman", template['font_size_subtitle'] + 2)
+    c.setFillColorRGB(*text_color)
+    subtitle_text = template['subtitle'].replace('{FULL NAME}', '')
+    if '{FULL NAME}' in template['subtitle']:
+        # Split subtitle to highlight the name
+        parts = template['subtitle'].split('{FULL NAME}')
+        if len(parts) == 2:
+            # Draw first part
+            c.drawCentredString(width / 2, subtitle_y, parts[0].strip())
+            
+            # User's full name (prominent display with elegant styling)
+            name_y = subtitle_y - 50
+            c.setFont("Times-Bold", template['font_size_module'] + 6)
+            c.setFillColorRGB(*gold_color)
+            
+            # Add decorative quotes around name
+            full_name_display = f'"{full_name}"'
+            c.drawCentredString(width / 2, name_y, full_name_display)
+            
+            # Decorative flourish under name
+            c.setStrokeColorRGB(*gold_color)
+            c.setLineWidth(1)
+            name_width = c.stringWidth(full_name_display, "Times-Bold", template['font_size_module'] + 6)
+            flourish_y = name_y - 12
+            flourish_start = (width - name_width) / 2 - 20
+            flourish_end = (width + name_width) / 2 + 20
+            c.line(flourish_start, flourish_y, flourish_end, flourish_y)
+            
+            # Small decorative elements
+            c.setFillColorRGB(*gold_color)
+            c.circle(flourish_start - 5, flourish_y, 2, fill=True)
+            c.circle(flourish_end + 5, flourish_y, 2, fill=True)
+            
+            # Draw second part
+            c.setFont("Times-Roman", template['font_size_subtitle'] + 2)
+            c.setFillColorRGB(*text_color)
+            c.drawCentredString(width / 2, name_y - 50, parts[1].strip())
+            
+            module_y = name_y - 100
+        else:
+            c.drawCentredString(width / 2, subtitle_y, subtitle_text)
+            module_y = subtitle_y - 80
+    else:
+        c.drawCentredString(width / 2, subtitle_y, subtitle_text)
+        # User's full name without subtitle integration
+        name_y = subtitle_y - 50
+        c.setFont("Times-Bold", template['font_size_module'] + 6)
+        c.setFillColorRGB(*gold_color)
+        full_name_display = f'"{full_name}"'
+        c.drawCentredString(width / 2, name_y, full_name_display)
+        module_y = name_y - 80
 
-    # User's full name (prominent display)
-    c.setFont("Helvetica-Bold", template['font_size_module'])
-    name_y = height - template['margin_module'] + 30
-    c.drawCentredString(width / 2, name_y, full_name)
-
-    # Module name
-    c.setFont("Helvetica-Bold", template['font_size_module'])
+    # Module name with elegant presentation
+    c.setFont("Times-Bold", template['font_size_module'] + 2)
+    c.setFillColorRGB(*accent_color)
     module_text = f'"{module["title"]}"'
-    module_y = height - template['margin_module']
     c.drawCentredString(width / 2, module_y, module_text)
 
-    # Date
-    c.setFont("Helvetica", template['font_size_date'])
-    date_text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
-    date_y = height - template['margin_date']
+    # Date with professional formatting
+    date_y = module_y - 60
+    c.setFont("Times-Roman", template['font_size_date'] + 2)
+    c.setFillColorRGB(*text_color)
+    date_text = f"Completed on {datetime.now().strftime('%B %d, %Y')}"
     c.drawCentredString(width / 2, date_y, date_text)
 
-    # Footer text (if provided)
+    # Footer section
+    footer_y = date_y - 80
+    
+    # Footer text with professional styling
     if template.get('footer_text') and template['footer_text'].strip():
-        c.setFont("Helvetica", template['font_size_footer'])
-        footer_text = template['footer_text']
-        footer_y = height - template['margin_footer']
-        c.drawCentredString(width / 2, footer_y, footer_text)
+        c.setFont("Times-Italic", template['font_size_footer'] + 1)
+        c.setFillColorRGB(0.4, 0.4, 0.4)  # Lighter gray for footer
+        c.drawCentredString(width / 2, footer_y, template['footer_text'])
+        footer_y -= 30
 
-    # Signature section (if provided)
+    # Professional signature section
     if template.get('signature_name') and template['signature_name'].strip():
-        signature_x = width - 150  # Position on the right side
-        signature_base_y = height - template['margin_signature']
-
-        # Draw signature image if provided and exists
+        signature_area_y = 120  # Fixed position from bottom
+        signature_x = width - 200  # Right side positioning
+        
+        # Signature box with border
+        c.setStrokeColorRGB(*accent_color)
+        c.setLineWidth(1)
+        c.rect(signature_x - 20, signature_area_y - 10, 180, 80, fill=False, stroke=True)
+        
+        # "Authorized Signature" label
+        c.setFont("Helvetica", 8)
+        c.setFillColorRGB(0.5, 0.5, 0.5)
+        c.drawCentredString(signature_x + 70, signature_area_y + 55, "AUTHORIZED SIGNATURE")
+        
+        # Signature image or line
         signature_image_drawn = False
         if template.get('signature_url') and template['signature_url'].strip():
             try:
                 sig_url = template['signature_url'].strip()
-                
-                # Handle different URL formats
-                if sig_url.startswith(('http://', 'https://')):
-                    # External URL - skip for security
-                    print(f"Warning: External signature URLs not supported for security: {sig_url}")
-                else:
-                    # Local file path
+                if not sig_url.startswith(('http://', 'https://')):
                     if sig_url.startswith('/static/'):
-                        sig_path = sig_url[1:]  # Remove leading slash
+                        sig_path = sig_url[1:]
                     elif sig_url.startswith('static/'):
                         sig_path = sig_url
                     else:
                         sig_path = f'static/{sig_url}'
                     
                     if os.path.exists(sig_path):
-                        c.drawInlineImage(sig_path,
-                                          signature_x,
-                                          signature_base_y - template['signature_height'],
+                        c.drawInlineImage(sig_path, signature_x, signature_area_y + 15,
                                           width=template['signature_width'],
                                           height=template['signature_height'])
                         signature_image_drawn = True
-                    else:
-                        print(f"Warning: Signature file not found at {sig_path}")
             except Exception as e:
                 print(f"Error drawing signature: {e}")
 
-        # Draw signature line if no image
+        # Signature line if no image
         if not signature_image_drawn:
-            c.line(signature_x, signature_base_y - 20, signature_x + template['signature_width'], signature_base_y - 20)
+            c.setStrokeColorRGB(*text_color)
+            c.setLineWidth(1)
+            c.line(signature_x, signature_area_y + 25, signature_x + 140, signature_area_y + 25)
 
-        # Draw signature name
-        c.setFont("Helvetica-Bold", template['font_size_signature'])
-        name_y = signature_base_y - (template['signature_height'] + 25 if signature_image_drawn else 35)
-        c.drawCentredString(signature_x + template['signature_width'] / 2, name_y, template['signature_name'])
-
-        # Draw signature title if provided
+        # Signature name and title
+        c.setFont("Times-Bold", template['font_size_signature'] + 2)
+        c.setFillColorRGB(*text_color)
+        c.drawCentredString(signature_x + 70, signature_area_y + 10, template['signature_name'])
+        
         if template.get('signature_title') and template['signature_title'].strip():
-            c.setFont("Helvetica", template['font_size_signature'] - 1)
-            title_y = name_y - 15
-            c.drawCentredString(signature_x + template['signature_width'] / 2, title_y, template['signature_title'])
+            c.setFont("Times-Roman", template['font_size_signature'])
+            c.setFillColorRGB(0.4, 0.4, 0.4)
+            c.drawCentredString(signature_x + 70, signature_area_y - 5, template['signature_title'])
+
+    # Add final decorative elements
+    # Bottom decorative border
+    c.setStrokeColorRGB(*gold_color)
+    c.setLineWidth(2)
+    deco_y = 60
+    c.line(width/2 - 150, deco_y, width/2 + 150, deco_y)
+    
+    # Small decorative flourishes
+    for i in range(-2, 3):
+        x_pos = width/2 + i * 60
+        c.setFillColorRGB(*gold_color)
+        c.circle(x_pos, deco_y, 3, fill=True)
 
     c.save()
 
