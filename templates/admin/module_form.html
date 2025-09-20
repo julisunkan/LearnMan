@@ -16,7 +16,7 @@
         
         <h1>{{ action }} Module</h1>
         
-        <form method="POST">
+        <form method="POST" id="moduleForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="mb-3">
@@ -134,5 +134,13 @@
         .catch(error => {
             console.error(error);
         });
+    
+    // Handle form submission to sync CKEditor data
+    document.getElementById('moduleForm').addEventListener('submit', function(e) {
+        if (editor) {
+            // Update the textarea with CKEditor content before submission
+            document.getElementById('content').value = editor.getData();
+        }
+    });
 </script>
 {% endblock %}
