@@ -1,0 +1,1315 @@
+
+<h2>🔍 Network Scanning with Python</h2>
+
+<p>Network scanning is one of the most fundamental skills in ethical hacking. It involves discovering live hosts, open ports, running services, and potential vulnerabilities on target networks. In this module, you'll learn to build powerful and efficient network scanners using Python.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=400&fit=crop&auto=format" alt="Network infrastructure and scanning visualization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h3>🎯 What is Network Scanning?</h3>
+
+<p>Network scanning is the process of identifying active hosts, open ports, and running services on a network. It's typically divided into three main phases:</p>
+
+<ol>
+    <li><strong>Host Discovery:</strong> Finding live systems on the network</li>
+    <li><strong>Port Scanning:</strong> Identifying open ports on discovered hosts</li>
+    <li><strong>Service Enumeration:</strong> Determining what services are running on open ports</li>
+</ol>
+
+<div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0;">
+    <strong>Legal Notice:</strong> Only perform network scanning on systems you own or have explicit permission to test. Unauthorized scanning can be illegal and may violate terms of service.
+</div>
+
+<h3>🏠 Host Discovery Techniques</h3>
+
+<p>Before scanning for specific services, you need to identify which hosts are alive on the network.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=700&h=350&fit=crop&auto=format" alt="Network discovery and host identification" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h4>🏓 ICMP Ping Sweep</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import subprocess
+import threading
+import queue
+import ipaddress
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+def ping_host(host):
+    """Ping a single host to check if it's alive"""
+    try:
+        # Use system ping command
+        result = subprocess.run(
+            ['ping', '-c', '1', '-W', '1', str(host)],
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+        
+        if result.returncode == 0:
+            return str(host), True
+        else:
+            return str(host), False
+            
+    except subprocess.TimeoutExpired:
+        return str(host), False
+    except Exception as e:
+        return str(host), False
+
+def ping_sweep(network_range, max_threads=50):
+    """Perform ping sweep on a network range"""
+    try:
+        network = ipaddress.ip_network(network_range, strict=False)
+        alive_hosts = []
+        
+        print(f"Starting ping sweep on {network_range}")
+        print(f"Scanning {network.num_addresses} addresses...")
+        
+        # Use ThreadPoolExecutor for concurrent pings
+        with ThreadPoolExecutor(max_workers=max_threads) as executor:
+            # Submit ping tasks
+            future_to_host = {
+                executor.submit(ping_host, host): host 
+                for host in network.hosts()
+            }
+            
+            # Process completed tasks
+            for future in as_completed(future_to_host):
+                host, is_alive = future.result()
+                if is_alive:
+                    alive_hosts.append(host)
+                    print(f"[+] {host} is alive")
+        
+        print(f"\nScan complete. Found {len(alive_hosts)} alive hosts:")
+        for host in alive_hosts:
+            print(f"  - {host}")
+        
+        return alive_hosts
+        
+    except ValueError as e:
+        print(f"Invalid network range: {e}")
+        return []
+
+# Usage example
+alive_hosts = ping_sweep("192.168.1.0/24")
+</code></pre>
+
+<h4>🔌 TCP Connect Scan for Host Discovery</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import socket
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
+def tcp_connect_scan(host, port, timeout=1):
+    """Attempt TCP connection to detect live host"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((host, port))
+        sock.close()
+        
+        # Return True if connection successful (port open or closed but host alive)
+        return result in [0, 61, 111]  # 0=open, 61=connection refused, 111=no route
+        
+    except Exception:
+        return False
+
+def tcp_host_discovery(network_range, common_ports=None, max_threads=100):
+    """Discover hosts using TCP connect to common ports"""
+    if common_ports is None:
+        common_ports = [22, 23, 25, 53, 80, 110, 443, 993, 995, 8080]
+    
+    try:
+        network = ipaddress.ip_network(network_range, strict=False)
+        alive_hosts = set()
+        
+        print(f"TCP host discovery on {network_range}")
+        print(f"Testing ports: {common_ports}")
+        
+        with ThreadPoolExecutor(max_workers=max_threads) as executor:
+            # Create tasks for each host-port combination
+            futures = []
+            for host in network.hosts():
+                for port in common_ports:
+                    future = executor.submit(tcp_connect_scan, str(host), port)
+                    futures.append((future, str(host), port))
+            
+            # Process results
+            for future, host, port in futures:
+                if future.result():
+                    alive_hosts.add(host)
+                    print(f"[+] {host} responds on port {port}")
+        
+        print(f"\nDiscovered {len(alive_hosts)} live hosts")
+        return list(alive_hosts)
+        
+    except ValueError as e:
+        print(f"Invalid network range: {e}")
+        return []
+
+# Usage
+live_hosts = tcp_host_discovery("192.168.1.0/24")
+</code></pre>
+
+<h3>🚪 Port Scanning Techniques</h3>
+
+<p>Once you've identified live hosts, the next step is to scan for open ports and running services.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=700&h=350&fit=crop&auto=format" alt="Port scanning and network analysis tools" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h4>🔗 TCP Connect Scan</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import socket
+import threading
+import time
+from datetime import datetime
+
+class PortScanner:
+    def __init__(self, target, timeout=1):
+        self.target = target
+        self.timeout = timeout
+        self.open_ports = []
+        self.closed_ports = []
+        self.lock = threading.Lock()
+    
+    def scan_port(self, port):
+        """Scan a single port using TCP connect"""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(self.timeout)
+            result = sock.connect_ex((self.target, port))
+            
+            with self.lock:
+                if result == 0:
+                    self.open_ports.append(port)
+                    print(f"[+] Port {port}/tcp open")
+                else:
+                    self.closed_ports.append(port)
+            
+            sock.close()
+            
+        except Exception as e:
+            with self.lock:
+                self.closed_ports.append(port)
+    
+    def scan_range(self, start_port=1, end_port=1024, max_threads=100):
+        """Scan a range of ports"""
+        print(f"Starting TCP connect scan on {self.target}")
+        print(f"Scanning ports {start_port}-{end_port}")
+        print(f"Start time: {datetime.now()}")
+        print("-" * 50)
+        
+        start_time = time.time()
+        threads = []
+        
+        for port in range(start_port, end_port + 1):
+            while threading.active_count() > max_threads:
+                time.sleep(0.01)
+            
+            thread = threading.Thread(target=self.scan_port, args=(port,))
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
+        
+        end_time = time.time()
+        scan_time = end_time - start_time
+        
+        print("\n" + "=" * 50)
+        print(f"Scan completed in {scan_time:.2f} seconds")
+        print(f"Open ports found: {len(self.open_ports)}")
+        
+        if self.open_ports:
+            print("\nOpen ports:")
+            for port in sorted(self.open_ports):
+                service = self.get_service_name(port)
+                print(f"  {port}/tcp - {service}")
+        
+        return self.open_ports
+    
+    @staticmethod
+    def get_service_name(port):
+        """Get common service name for port"""
+        common_ports = {
+            21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP",
+            53: "DNS", 80: "HTTP", 110: "POP3", 143: "IMAP",
+            443: "HTTPS", 993: "IMAPS", 995: "POP3S",
+            3389: "RDP", 5432: "PostgreSQL", 3306: "MySQL"
+        }
+        return common_ports.get(port, "Unknown")
+
+# Usage
+scanner = PortScanner("127.0.0.1")
+open_ports = scanner.scan_range(1, 1000)
+</code></pre>
+
+<h4>⚡ SYN Scan (Stealth Scan)</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>from scapy.all import *
+import random
+
+def syn_scan(target, ports, timeout=1):
+    """Perform SYN scan using Scapy"""
+    open_ports = []
+    closed_ports = []
+    filtered_ports = []
+    
+    # Generate random source port
+    src_port = random.randint(1024, 65535)
+    
+    print(f"Starting SYN scan on {target}")
+    print(f"Scanning {len(ports)} ports...")
+    
+    for port in ports:
+        try:
+            # Create SYN packet
+            ip_layer = IP(dst=target)
+            tcp_layer = TCP(sport=src_port, dport=port, flags="S")
+            packet = ip_layer / tcp_layer
+            
+            # Send packet and wait for response
+            response = sr1(packet, timeout=timeout, verbose=0)
+            
+            if response:
+                # Check response flags
+                if response.haslayer(TCP):
+                    tcp_flags = response[TCP].flags
+                    
+                    if tcp_flags == 18:  # SYN-ACK (0x12)
+                        open_ports.append(port)
+                        print(f"[+] Port {port}/tcp open")
+                        
+                        # Send RST to close connection
+                        rst_packet = IP(dst=target) / TCP(sport=src_port, dport=port, flags="R")
+                        send(rst_packet, verbose=0)
+                        
+                    elif tcp_flags == 20:  # RST-ACK (0x14)
+                        closed_ports.append(port)
+                        
+                elif response.haslayer(ICMP):
+                    # ICMP response indicates filtered port
+                    filtered_ports.append(port)
+            else:
+                # No response - likely filtered
+                filtered_ports.append(port)
+                
+        except Exception as e:
+            print(f"Error scanning port {port}: {e}")
+    
+    # Print results
+    print(f"\nScan Results for {target}:")
+    print(f"Open ports: {len(open_ports)}")
+    print(f"Closed ports: {len(closed_ports)}")
+    print(f"Filtered ports: {len(filtered_ports)}")
+    
+    if open_ports:
+        print("\nOpen ports:")
+        for port in sorted(open_ports):
+            print(f"  {port}/tcp")
+    
+    return {
+        'open': open_ports,
+        'closed': closed_ports,
+        'filtered': filtered_ports
+    }
+
+# Usage (requires root privileges)
+ports_to_scan = [21, 22, 23, 25, 53, 80, 110, 443, 993, 995]
+results = syn_scan("192.168.1.1", ports_to_scan)
+</code></pre>
+
+<h3>🔍 Service Enumeration and Banner Grabbing</h3>
+
+<p>After identifying open ports, the next step is to determine what services are running and gather version information.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=700&h=350&fit=crop&auto=format" alt="Service enumeration and banner grabbing process" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h4>🏷️ Advanced Banner Grabbing</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import socket
+import ssl
+import threading
+import time
+
+class ServiceEnumerator:
+    def __init__(self):
+        self.service_probes = {
+            21: b"USER anonymous\r\n",
+            22: b"SSH-2.0-OpenSSH_test\r\n",
+            25: b"HELO test.com\r\n",
+            53: b"\x00\x00\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x06google\x03com\x00\x00\x01\x00\x01",
+            80: b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n",
+            110: b"USER test\r\n",
+            443: b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n",
+            993: b"",  # SSL/TLS services
+            995: b""
+        }
+    
+    def grab_banner(self, host, port, timeout=5, use_ssl=False):
+        """Enhanced banner grabbing with SSL support"""
+        try:
+            # Create socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            
+            # Connect to target
+            sock.connect((host, port))
+            
+            # Wrap with SSL if needed
+            if use_ssl or port in [443, 993, 995]:
+                try:
+                    context = ssl.create_default_context()
+                    context.check_hostname = False
+                    context.verify_mode = ssl.CERT_NONE
+                    sock = context.wrap_socket(sock)
+                except ssl.SSLError:
+                    pass  # Continue without SSL
+            
+            # Try to receive initial banner
+            banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+            
+            # If no initial banner, send probe
+            if not banner and port in self.service_probes:
+                sock.send(self.service_probes[port])
+                banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+            
+            sock.close()
+            return banner
+            
+        except Exception as e:
+            return f"Error: {str(e)}"
+    
+    def enumerate_services(self, host, ports):
+        """Enumerate services on multiple ports"""
+        results = {}
+        
+        print(f"Enumerating services on {host}")
+        print("-" * 40)
+        
+        for port in ports:
+            banner = self.grab_banner(host, port)
+            if banner and "Error:" not in banner:
+                results[port] = banner
+                print(f"Port {port}/tcp:")
+                print(f"  Service: {self.identify_service(port, banner)}")
+                print(f"  Banner: {banner[:100]}...")
+                print()
+        
+        return results
+    
+    def identify_service(self, port, banner):
+        """Identify service based on port and banner"""
+        banner_lower = banner.lower()
+        
+        # Common service signatures
+        if "ssh" in banner_lower:
+            return "SSH"
+        elif "ftp" in banner_lower:
+            return "FTP"
+        elif "smtp" in banner_lower or "mail" in banner_lower:
+            return "SMTP"
+        elif "http" in banner_lower or "server:" in banner_lower:
+            return "HTTP"
+        elif "pop3" in banner_lower:
+            return "POP3"
+        elif "imap" in banner_lower:
+            return "IMAP"
+        elif port == 53:
+            return "DNS"
+        elif port == 443:
+            return "HTTPS"
+        else:
+            return "Unknown"
+
+# Usage
+enumerator = ServiceEnumerator()
+target_ports = [21, 22, 25, 53, 80, 110, 443]
+services = enumerator.enumerate_services("example.com", target_ports)
+</code></pre>
+
+<h4>🌐 HTTP Service Enumeration</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import requests
+from urllib.parse import urljoin
+import re
+
+class HTTPEnumerator:
+    def __init__(self, timeout=10):
+        self.timeout = timeout
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+        })
+    
+    def enumerate_http_service(self, target_url):
+        """Comprehensive HTTP service enumeration"""
+        results = {
+            'server_info': {},
+            'security_headers': {},
+            'technologies': [],
+            'directories': [],
+            'files': []
+        }
+        
+        try:
+            # Basic request to get server information
+            response = self.session.get(target_url, timeout=self.timeout)
+            
+            # Server information
+            results['server_info'] = {
+                'status_code': response.status_code,
+                'server': response.headers.get('Server', 'Unknown'),
+                'powered_by': response.headers.get('X-Powered-By', 'Unknown'),
+                'content_length': response.headers.get('Content-Length', 'Unknown'),
+                'content_type': response.headers.get('Content-Type', 'Unknown')
+            }
+            
+            # Security headers analysis
+            security_headers = [
+                'X-Frame-Options', 'X-XSS-Protection', 'X-Content-Type-Options',
+                'Strict-Transport-Security', 'Content-Security-Policy',
+                'X-Permitted-Cross-Domain-Policies'
+            ]
+            
+            for header in security_headers:
+                results['security_headers'][header] = response.headers.get(header, 'Missing')
+            
+            # Technology detection from headers and content
+            self.detect_technologies(response, results)
+            
+            # Directory enumeration
+            results['directories'] = self.enumerate_directories(target_url)
+            
+            # Common file enumeration
+            results['files'] = self.enumerate_files(target_url)
+            
+        except Exception as e:
+            print(f"Error enumerating HTTP service: {e}")
+        
+        return results
+    
+    def detect_technologies(self, response, results):
+        """Detect web technologies from headers and content"""
+        content = response.text.lower()
+        headers = response.headers
+        
+        # Server technologies
+        server = headers.get('Server', '').lower()
+        powered_by = headers.get('X-Powered-By', '').lower()
+        
+        technologies = []
+        
+        # Web servers
+        if 'apache' in server:
+            technologies.append('Apache')
+        elif 'nginx' in server:
+            technologies.append('Nginx')
+        elif 'iis' in server:
+            technologies.append('IIS')
+        
+        # Programming languages
+        if 'php' in powered_by or 'php' in server:
+            technologies.append('PHP')
+        elif 'asp.net' in powered_by:
+            technologies.append('ASP.NET')
+        
+        # Content analysis
+        if 'wordpress' in content:
+            technologies.append('WordPress')
+        elif 'joomla' in content:
+            technologies.append('Joomla')
+        elif 'drupal' in content:
+            technologies.append('Drupal')
+        
+        # JavaScript frameworks
+        if 'jquery' in content:
+            technologies.append('jQuery')
+        elif 'angular' in content:
+            technologies.append('Angular')
+        elif 'react' in content:
+            technologies.append('React')
+        
+        results['technologies'] = technologies
+    
+    def enumerate_directories(self, base_url):
+        """Enumerate common directories"""
+        common_dirs = [
+            'admin', 'administrator', 'login', 'wp-admin', 'wp-content',
+            'images', 'img', 'css', 'js', 'assets', 'uploads', 'files',
+            'backup', 'backups', 'old', 'temp', 'tmp', 'test', 'dev'
+        ]
+        
+        found_dirs = []
+        
+        for directory in common_dirs:
+            try:
+                url = urljoin(base_url, directory + '/')
+                response = self.session.head(url, timeout=5)
+                
+                if response.status_code == 200:
+                    found_dirs.append(directory)
+                    print(f"[+] Directory found: {directory}/")
+                elif response.status_code == 403:
+                    found_dirs.append(f"{directory} (403 Forbidden)")
+                    print(f"[!] Directory exists but forbidden: {directory}/")
+                    
+            except Exception:
+                pass
+        
+        return found_dirs
+    
+    def enumerate_files(self, base_url):
+        """Enumerate common files"""
+        common_files = [
+            'robots.txt', 'sitemap.xml', '.htaccess', 'web.config',
+            'phpinfo.php', 'info.php', 'test.php', 'config.php',
+            'readme.txt', 'changelog.txt', 'license.txt'
+        ]
+        
+        found_files = []
+        
+        for filename in common_files:
+            try:
+                url = urljoin(base_url, filename)
+                response = self.session.head(url, timeout=5)
+                
+                if response.status_code == 200:
+                    found_files.append(filename)
+                    print(f"[+] File found: {filename}")
+                    
+            except Exception:
+                pass
+        
+        return found_files
+
+# Usage
+http_enum = HTTPEnumerator()
+results = http_enum.enumerate_http_service("https://example.com")
+
+# Print results
+print("HTTP Service Enumeration Results:")
+print("=" * 40)
+print(f"Server: {results['server_info']['server']}")
+print(f"Technologies: {', '.join(results['technologies'])}")
+print(f"Directories found: {len(results['directories'])}")
+print(f"Files found: {len(results['files'])}")
+</code></pre>
+
+<h3>🚀 Advanced Scanning with Python-Nmap</h3>
+
+<p>For more advanced scanning capabilities, we can leverage the power of Nmap through Python.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=700&h=350&fit=crop&auto=format" alt="Advanced network scanning tools and techniques" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h4>🔧 Python-Nmap Integration</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import nmap
+import json
+
+class AdvancedScanner:
+    def __init__(self):
+        self.nm = nmap.PortScanner()
+    
+    def comprehensive_scan(self, target, scan_type='basic'):
+        """Perform comprehensive network scan"""
+        scan_profiles = {
+            'basic': '-sS -O -sV',
+            'aggressive': '-sS -sU -O -sV -sC --version-all',
+            'stealth': '-sS -f -T2',
+            'fast': '-sS -T4 --top-ports 1000',
+            'comprehensive': '-sS -sU -O -sV -sC -A --script vuln'
+        }
+        
+        scan_args = scan_profiles.get(scan_type, scan_profiles['basic'])
+        
+        print(f"Starting {scan_type} scan on {target}")
+        print(f"Scan arguments: {scan_args}")
+        print("-" * 50)
+        
+        try:
+            # Perform scan
+            self.nm.scan(target, arguments=scan_args)
+            
+            # Process results
+            results = self.process_scan_results()
+            
+            return results
+            
+        except Exception as e:
+            print(f"Scan error: {e}")
+            return None
+    
+    def process_scan_results(self):
+        """Process and format scan results"""
+        results = {
+            'hosts': {},
+            'summary': {
+                'total_hosts': 0,
+                'hosts_up': 0,
+                'total_ports': 0,
+                'open_ports': 0
+            }
+        }
+        
+        for host in self.nm.all_hosts():
+            host_info = {
+                'state': self.nm[host].state(),
+                'hostnames': [x['name'] for x in self.nm[host]['hostnames']],
+                'os': {},
+                'ports': {}
+            }
+            
+            # OS detection
+            if 'osmatch' in self.nm[host]:
+                for osmatch in self.nm[host]['osmatch']:
+                    host_info['os'] = {
+                        'name': osmatch['name'],
+                        'accuracy': osmatch['accuracy']
+                    }
+                    break
+            
+            # Port information
+            for protocol in self.nm[host].all_protocols():
+                ports = self.nm[host][protocol].keys()
+                
+                for port in ports:
+                    port_info = self.nm[host][protocol][port]
+                    host_info['ports'][f"{port}/{protocol}"] = {
+                        'state': port_info['state'],
+                        'name': port_info['name'],
+                        'product': port_info.get('product', ''),
+                        'version': port_info.get('version', ''),
+                        'extrainfo': port_info.get('extrainfo', '')
+                    }
+            
+            results['hosts'][host] = host_info
+            
+            # Update summary
+            results['summary']['total_hosts'] += 1
+            if host_info['state'] == 'up':
+                results['summary']['hosts_up'] += 1
+            
+            results['summary']['total_ports'] += len(host_info['ports'])
+            results['summary']['open_ports'] += len([
+                p for p in host_info['ports'].values() 
+                if p['state'] == 'open'
+            ])
+        
+        return results
+    
+    def vulnerability_scan(self, target):
+        """Perform vulnerability scanning using Nmap scripts"""
+        vuln_scripts = [
+            'vuln', 'exploit', 'auth', 'brute', 'discovery',
+            'dos', 'fuzzer', 'intrusive', 'malware', 'safe'
+        ]
+        
+        results = {}
+        
+        for script_category in vuln_scripts:
+            try:
+                print(f"Running {script_category} scripts...")
+                self.nm.scan(target, arguments=f'-sS --script {script_category}')
+                
+                for host in self.nm.all_hosts():
+                    if host not in results:
+                        results[host] = {}
+                    
+                    if 'hostscript' in self.nm[host]:
+                        results[host][script_category] = self.nm[host]['hostscript']
+                        
+            except Exception as e:
+                print(f"Error running {script_category} scripts: {e}")
+        
+        return results
+    
+    def export_results(self, results, filename, format='json'):
+        """Export scan results to file"""
+        try:
+            if format == 'json':
+                with open(f"{filename}.json", 'w') as f:
+                    json.dump(results, f, indent=2)
+            elif format == 'xml':
+                with open(f"{filename}.xml", 'w') as f:
+                    f.write(self.nm.get_nmap_last_output())
+            
+            print(f"Results exported to {filename}.{format}")
+            
+        except Exception as e:
+            print(f"Export error: {e}")
+
+# Usage
+scanner = AdvancedScanner()
+
+# Basic scan
+basic_results = scanner.comprehensive_scan("192.168.1.1", "basic")
+
+# Vulnerability scan
+vuln_results = scanner.vulnerability_scan("192.168.1.1")
+
+# Export results
+scanner.export_results(basic_results, "scan_results", "json")
+</code></pre>
+
+<h3>⚡ Performance Optimization</h3>
+
+<p>Large-scale network scanning requires optimization for speed and efficiency.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=300&fit=crop&auto=format" alt="High-performance network scanning optimization" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h4>🏃‍♂️ Optimized Mass Scanner</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import asyncio
+import aiohttp
+import socket
+from concurrent.futures import ThreadPoolExecutor
+import time
+
+class MassScanner:
+    def __init__(self, max_concurrent=1000, timeout=1):
+        self.max_concurrent = max_concurrent
+        self.timeout = timeout
+        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.results = []
+    
+    async def scan_port_async(self, host, port):
+        """Asynchronous port scanning"""
+        async with self.semaphore:
+            try:
+                reader, writer = await asyncio.wait_for(
+                    asyncio.open_connection(host, port),
+                    timeout=self.timeout
+                )
+                writer.close()
+                await writer.wait_closed()
+                return host, port, True
+                
+            except Exception:
+                return host, port, False
+    
+    async def mass_port_scan(self, hosts, ports):
+        """Scan multiple hosts and ports concurrently"""
+        tasks = []
+        
+        for host in hosts:
+            for port in ports:
+                task = asyncio.create_task(self.scan_port_async(host, port))
+                tasks.append(task)
+        
+        print(f"Scanning {len(hosts)} hosts on {len(ports)} ports...")
+        print(f"Total combinations: {len(tasks)}")
+        
+        start_time = time.time()
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        end_time = time.time()
+        
+        # Process results
+        open_ports = []
+        for result in results:
+            if isinstance(result, tuple) and result[2]:  # Port is open
+                open_ports.append((result[0], result[1]))
+                print(f"[+] {result[0]}:{result[1]} open")
+        
+        scan_time = end_time - start_time
+        print(f"\nScan completed in {scan_time:.2f} seconds")
+        print(f"Found {len(open_ports)} open ports")
+        
+        return open_ports
+    
+    def batch_scan(self, network_range, ports, batch_size=254):
+        """Scan large networks in batches"""
+        import ipaddress
+        
+        network = ipaddress.ip_network(network_range, strict=False)
+        hosts = [str(host) for host in network.hosts()]
+        
+        all_results = []
+        
+        # Process in batches
+        for i in range(0, len(hosts), batch_size):
+            batch_hosts = hosts[i:i + batch_size]
+            print(f"Processing batch {i//batch_size + 1}: {len(batch_hosts)} hosts")
+            
+            # Run async scan for this batch
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                batch_results = loop.run_until_complete(
+                    self.mass_port_scan(batch_hosts, ports)
+                )
+                all_results.extend(batch_results)
+            finally:
+                loop.close()
+            
+            # Brief pause between batches
+            time.sleep(0.1)
+        
+        return all_results
+
+# Rate limiting for responsible scanning
+class RateLimitedScanner:
+    def __init__(self, requests_per_second=10):
+        self.min_interval = 1.0 / requests_per_second
+        self.last_request_time = 0
+    
+    async def rate_limited_scan(self, host, port):
+        """Rate-limited port scan"""
+        # Ensure minimum interval between requests
+        current_time = time.time()
+        time_since_last = current_time - self.last_request_time
+        
+        if time_since_last < self.min_interval:
+            await asyncio.sleep(self.min_interval - time_since_last)
+        
+        self.last_request_time = time.time()
+        
+        # Perform scan
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(host, port),
+                timeout=2
+            )
+            writer.close()
+            await writer.wait_closed()
+            return True
+        except Exception:
+            return False
+
+# Usage example
+async def main():
+    # Fast scanning for internal networks
+    fast_scanner = MassScanner(max_concurrent=500, timeout=0.5)
+    hosts = ["192.168.1." + str(i) for i in range(1, 11)]
+    ports = [22, 80, 443, 8080]
+    
+    results = await fast_scanner.mass_port_scan(hosts, ports)
+    
+    # Rate-limited scanning for external targets
+    rate_scanner = RateLimitedScanner(requests_per_second=2)
+    
+    external_results = []
+    for host in ["8.8.8.8", "1.1.1.1"]:
+        for port in [53, 80, 443]:
+            is_open = await rate_scanner.rate_limited_scan(host, port)
+            if is_open:
+                external_results.append((host, port))
+                print(f"[+] {host}:{port} open")
+
+# Run the async scanner
+if __name__ == "__main__":
+    asyncio.run(main())
+</code></pre>
+
+<h3>🛡️ Defensive Measures and Detection</h3>
+
+<p>Understanding how to detect and defend against network scanning is crucial for ethical hackers.</p>
+
+<div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6c757d; margin: 20px 0;">
+    <strong>Defensive Awareness:</strong> Ethical hackers should understand how their activities can be detected and what defensive measures exist.
+</div>
+
+<h4>🔍 Scan Detection Script</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import time
+from collections import defaultdict, deque
+from scapy.all import *
+
+class ScanDetector:
+    def __init__(self, threshold=10, time_window=60):
+        self.threshold = threshold
+        self.time_window = time_window
+        self.connection_tracking = defaultdict(deque)
+        self.alerts = []
+    
+    def analyze_packet(self, packet):
+        """Analyze packet for scanning behavior"""
+        if not packet.haslayer(IP) or not packet.haslayer(TCP):
+            return
+        
+        src_ip = packet[IP].src
+        dst_port = packet[TCP].dport
+        tcp_flags = packet[TCP].flags
+        current_time = time.time()
+        
+        # Track SYN packets (potential port scan)
+        if tcp_flags == 2:  # SYN flag
+            self.connection_tracking[src_ip].append((dst_port, current_time))
+            
+            # Clean old entries
+            while (self.connection_tracking[src_ip] and 
+                   current_time - self.connection_tracking[src_ip][0][1] > self.time_window):
+                self.connection_tracking[src_ip].popleft()
+            
+            # Check for scan pattern
+            if len(self.connection_tracking[src_ip]) > self.threshold:
+                unique_ports = set(port for port, _ in self.connection_tracking[src_ip])
+                if len(unique_ports) > self.threshold // 2:
+                    self.generate_alert(src_ip, unique_ports)
+    
+    def generate_alert(self, src_ip, ports):
+        """Generate scan detection alert"""
+        alert = {
+            'timestamp': time.time(),
+            'source_ip': src_ip,
+            'alert_type': 'Port Scan Detected',
+            'ports_scanned': list(ports),
+            'scan_intensity': len(ports)
+        }
+        
+        self.alerts.append(alert)
+        print(f"[ALERT] Port scan detected from {src_ip}")
+        print(f"        Ports scanned: {len(ports)}")
+        print(f"        Timestamp: {time.ctime(alert['timestamp'])}")
+
+# Evasion techniques awareness
+class EvasionTechniques:
+    @staticmethod
+    def slow_scan_example():
+        """Example of slow scanning to evade detection"""
+        target = "192.168.1.1"
+        ports = [21, 22, 23, 25, 53, 80, 110, 443]
+        
+        print("Performing slow scan to evade detection...")
+        
+        for port in ports:
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(5)
+                result = sock.connect_ex((target, port))
+                
+                if result == 0:
+                    print(f"[+] Port {port} open")
+                
+                sock.close()
+                
+                # Long delay between connections
+                time.sleep(30)  # 30 second delay
+                
+            except Exception as e:
+                print(f"Error scanning port {port}: {e}")
+    
+    @staticmethod
+    def fragmented_scan_example():
+        """Example of fragmented packet scanning"""
+        target = "192.168.1.1"
+        port = 80
+        
+        # Create fragmented SYN packet
+        ip = IP(dst=target, flags="MF")  # More Fragments flag
+        tcp = TCP(dport=port, flags="S")
+        
+        # Split into fragments
+        packet = ip / tcp
+        fragments = fragment(packet, fragsize=8)
+        
+        print(f"Sending {len(fragments)} fragmented packets to {target}:{port}")
+        
+        for frag in fragments:
+            send(frag, verbose=0)
+            time.sleep(0.1)
+</code></pre>
+
+<h3>📊 Comprehensive Scanning Framework</h3>
+
+<p>Let's create a complete scanning framework that combines all the techniques we've learned.</p>
+
+<div style="text-align: center; margin: 20px 0;">
+    <img src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=700&h=350&fit=crop&auto=format" alt="Comprehensive network scanning framework" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+</div>
+
+<h4>🏗️ Complete Scanning Framework</h4>
+
+<pre style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; overflow-x: auto;">
+<code>import json
+import csv
+from datetime import datetime
+import argparse
+
+class ComprehensiveScanningFramework:
+    def __init__(self, config_file=None):
+        self.config = self.load_config(config_file)
+        self.results = {
+            'scan_info': {
+                'start_time': datetime.now().isoformat(),
+                'scanner_version': '1.0',
+                'targets': [],
+                'scan_types': []
+            },
+            'hosts': {}
+        }
+    
+    def load_config(self, config_file):
+        """Load scanning configuration"""
+        default_config = {
+            'timeouts': {
+                'connect': 3,
+                'read': 5
+            },
+            'concurrency': {
+                'max_threads': 100,
+                'max_hosts': 50
+            },
+            'ports': {
+                'common': [21, 22, 23, 25, 53, 80, 110, 135, 139, 143, 443, 993, 995, 3389, 5432, 3306],
+                'web': [80, 443, 8080, 8443, 8000, 8888],
+                'database': [1433, 3306, 5432, 1521, 27017]
+            },
+            'scan_types': {
+                'discovery': True,
+                'port_scan': True,
+                'service_enum': True,
+                'vulnerability_scan': False
+            }
+        }
+        
+        if config_file:
+            try:
+                with open(config_file, 'r') as f:
+                    user_config = json.load(f)
+                    default_config.update(user_config)
+            except Exception as e:
+                print(f"Error loading config file: {e}")
+        
+        return default_config
+    
+    def run_comprehensive_scan(self, targets, scan_profile='default'):
+        """Run comprehensive scan on targets"""
+        print(f"Starting comprehensive scan")
+        print(f"Targets: {targets}")
+        print(f"Profile: {scan_profile}")
+        print("=" * 50)
+        
+        # Host discovery
+        if self.config['scan_types']['discovery']:
+            print("Phase 1: Host Discovery")
+            alive_hosts = self.discover_hosts(targets)
+            self.results['scan_info']['targets'] = alive_hosts
+        else:
+            alive_hosts = targets
+        
+        # Port scanning
+        if self.config['scan_types']['port_scan']:
+            print("\nPhase 2: Port Scanning")
+            for host in alive_hosts:
+                self.scan_host_ports(host)
+        
+        # Service enumeration
+        if self.config['scan_types']['service_enum']:
+            print("\nPhase 3: Service Enumeration")
+            for host in alive_hosts:
+                self.enumerate_host_services(host)
+        
+        # Vulnerability scanning
+        if self.config['scan_types']['vulnerability_scan']:
+            print("\nPhase 4: Vulnerability Scanning")
+            for host in alive_hosts:
+                self.scan_host_vulnerabilities(host)
+        
+        self.results['scan_info']['end_time'] = datetime.now().isoformat()
+        
+        return self.results
+    
+    def discover_hosts(self, targets):
+        """Discover live hosts"""
+        # Implementation would use ping sweep or TCP connect
+        # For brevity, returning targets as-is
+        return targets
+    
+    def scan_host_ports(self, host):
+        """Scan ports on a specific host"""
+        if host not in self.results['hosts']:
+            self.results['hosts'][host] = {'ports': {}, 'services': {}, 'vulnerabilities': []}
+        
+        ports_to_scan = self.config['ports']['common']
+        
+        # Use our previous PortScanner implementation
+        scanner = PortScanner(host, timeout=self.config['timeouts']['connect'])
+        open_ports = scanner.scan_range(min(ports_to_scan), max(ports_to_scan))
+        
+        for port in open_ports:
+            self.results['hosts'][host]['ports'][port] = {
+                'state': 'open',
+                'protocol': 'tcp'
+            }
+    
+    def enumerate_host_services(self, host):
+        """Enumerate services on host"""
+        if host not in self.results['hosts']:
+            return
+        
+        enumerator = ServiceEnumerator()
+        open_ports = list(self.results['hosts'][host]['ports'].keys())
+        
+        services = enumerator.enumerate_services(host, open_ports)
+        self.results['hosts'][host]['services'] = services
+    
+    def scan_host_vulnerabilities(self, host):
+        """Scan for vulnerabilities"""
+        # This would integrate with vulnerability databases
+        # and specific vulnerability checks
+        pass
+    
+    def generate_report(self, output_format='json', filename=None):
+        """Generate scan report"""
+        if not filename:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"scan_report_{timestamp}"
+        
+        if output_format == 'json':
+            with open(f"{filename}.json", 'w') as f:
+                json.dump(self.results, f, indent=2)
+        
+        elif output_format == 'csv':
+            with open(f"{filename}.csv", 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Host', 'Port', 'State', 'Service', 'Version'])
+                
+                for host, data in self.results['hosts'].items():
+                    for port, port_info in data['ports'].items():
+                        service_info = data['services'].get(port, {})
+                        writer.writerow([
+                            host, port, port_info['state'],
+                            service_info.get('name', 'Unknown'),
+                            service_info.get('version', 'Unknown')
+                        ])
+        
+        elif output_format == 'html':
+            self.generate_html_report(filename)
+        
+        print(f"Report generated: {filename}.{output_format}")
+    
+    def generate_html_report(self, filename):
+        """Generate HTML report"""
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Network Scan Report</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                .summary { background-color: #e7f3ff; padding: 15px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <h1>Network Scan Report</h1>
+            <div class="summary">
+                <h2>Scan Summary</h2>
+                <p><strong>Start Time:</strong> {start_time}</p>
+                <p><strong>End Time:</strong> {end_time}</p>
+                <p><strong>Hosts Scanned:</strong> {host_count}</p>
+                <p><strong>Total Open Ports:</strong> {port_count}</p>
+            </div>
+            
+            <h2>Detailed Results</h2>
+            <table>
+                <tr>
+                    <th>Host</th>
+                    <th>Port</th>
+                    <th>State</th>
+                    <th>Service</th>
+                    <th>Version</th>
+                </tr>
+                {table_rows}
+            </table>
+        </body>
+        </html>
+        """
+        
+        # Generate table rows
+        table_rows = ""
+        total_ports = 0
+        
+        for host, data in self.results['hosts'].items():
+            for port, port_info in data['ports'].items():
+                service_info = data['services'].get(port, {})
+                table_rows += f"""
+                <tr>
+                    <td>{host}</td>
+                    <td>{port}</td>
+                    <td>{port_info['state']}</td>
+                    <td>{service_info.get('name', 'Unknown')}</td>
+                    <td>{service_info.get('version', 'Unknown')}</td>
+                </tr>
+                """
+                total_ports += 1
+        
+        # Fill template
+        html_content = html_template.format(
+            start_time=self.results['scan_info']['start_time'],
+            end_time=self.results['scan_info'].get('end_time', 'In Progress'),
+            host_count=len(self.results['hosts']),
+            port_count=total_ports,
+            table_rows=table_rows
+        )
+        
+        with open(f"{filename}.html", 'w') as f:
+            f.write(html_content)
+
+# Command-line interface
+def main():
+    parser = argparse.ArgumentParser(description='Comprehensive Network Scanner')
+    parser.add_argument('targets', nargs='+', help='Target hosts or networks')
+    parser.add_argument('--config', help='Configuration file')
+    parser.add_argument('--output', choices=['json', 'csv', 'html'], default='json')
+    parser.add_argument('--filename', help='Output filename')
+    parser.add_argument('--profile', default='default', help='Scan profile')
+    
+    args = parser.parse_args()
+    
+    # Create scanner
+    scanner = ComprehensiveScanningFramework(args.config)
+    
+    # Run scan
+    results = scanner.run_comprehensive_scan(args.targets, args.profile)
+    
+    # Generate report
+    scanner.generate_report(args.output, args.filename)
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+
+<h3>📚 Key Takeaways</h3>
+
+<ul>
+    <li><strong>Host Discovery:</strong> Use ICMP ping sweeps and TCP connect scans</li>
+    <li><strong>Port Scanning:</strong> Master TCP connect and SYN stealth scanning</li>
+    <li><strong>Service Enumeration:</strong> Banner grabbing and protocol-specific probes</li>
+    <li><strong>Performance:</strong> Asynchronous scanning for large-scale operations</li>
+    <li><strong>Stealth:</strong> Rate limiting and fragmentation for evasion</li>
+    <li><strong>Detection:</strong> Understand how scans can be detected and mitigated</li>
+    <li><strong>Reporting:</strong> Comprehensive documentation of findings</li>
+</ul>
+
+<div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; margin: 20px 0;">
+    <strong>Next Module:</strong> With network scanning mastered, you're ready to move on to web application security testing. The next module will teach you to identify and exploit web vulnerabilities using Python.
+</div>
+
+<div style="background-color: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0;">
+    <strong>Ethical Reminder:</strong> These tools are powerful and should only be used on systems you own or have explicit permission to test. Always follow responsible disclosure practices when you discover vulnerabilities.
+</div>

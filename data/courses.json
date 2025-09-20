@@ -1,12 +1,287 @@
+
 {
   "modules": [
     {
-      "id": "11b5eeec-eceb-4b90-b3e6-dfa1a447f6ef",
-      "title": "A Detailed Guide on PassTheCert",
-      "description": "Pass-the-Certificate is a highly effective Kerberos privilege escalation method that bypasses traditional password-based authentication.",
+      "id": "intro-ethical-hacking",
+      "title": "Introduction to Ethical Hacking",
+      "description": "Learn the fundamentals of ethical hacking, legal considerations, and the role of penetration testing in cybersecurity.",
       "video_url": "",
-      "created_at": "2025-09-15T11:51:32.703782",
-      "order": 0
+      "created_at": "2025-01-20T10:00:00.000000",
+      "order": 1,
+      "quiz": {
+        "description": "Test your understanding of ethical hacking fundamentals",
+        "passing_score": 70,
+        "questions": [
+          {
+            "question": "What is the primary difference between ethical hacking and malicious hacking?",
+            "options": [
+              "Ethical hackers use different tools",
+              "Ethical hackers have proper authorization and follow legal guidelines",
+              "Ethical hackers only work during business hours",
+              "There is no difference"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "Which phase comes first in the penetration testing methodology?",
+            "options": [
+              "Exploitation",
+              "Reconnaissance",
+              "Post-exploitation",
+              "Reporting"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "What does OSINT stand for?",
+            "options": [
+              "Open Source Intelligence",
+              "Operating System Intelligence",
+              "Organizational Security Intelligence",
+              "Online Security Intelligence"
+            ],
+            "correct_answer": 0,
+            "type": "multiple_choice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "python-networking-basics",
+      "title": "Python Networking Fundamentals",
+      "description": "Master Python's networking capabilities using sockets, HTTP requests, and network protocols essential for ethical hacking.",
+      "video_url": "",
+      "created_at": "2025-01-20T10:15:00.000000",
+      "order": 2,
+      "quiz": {
+        "description": "Test your Python networking knowledge",
+        "passing_score": 70,
+        "questions": [
+          {
+            "question": "Which Python library is commonly used for making HTTP requests?",
+            "options": [
+              "socket",
+              "requests",
+              "urllib",
+              "All of the above"
+            ],
+            "correct_answer": 3,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "What does TCP stand for?",
+            "options": [
+              "Transfer Control Protocol",
+              "Transmission Control Protocol",
+              "Transport Communication Protocol",
+              "Technical Computer Protocol"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "Which port is commonly used for HTTP traffic?",
+            "options": [
+              "21",
+              "22",
+              "80",
+              "443"
+            ],
+            "correct_answer": 2,
+            "type": "multiple_choice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "network-scanning-python",
+      "title": "Network Scanning with Python",
+      "description": "Learn to build powerful network scanners using Python to discover hosts, open ports, and services on target networks.",
+      "video_url": "",
+      "created_at": "2025-01-20T10:30:00.000000",
+      "order": 3,
+      "quiz": {
+        "description": "Test your network scanning knowledge",
+        "passing_score": 70,
+        "questions": [
+          {
+            "question": "What is the purpose of a port scanner?",
+            "options": [
+              "To find open ports on a target system",
+              "To scan for viruses",
+              "To monitor network traffic",
+              "To encrypt data"
+            ],
+            "correct_answer": 0,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "Which Python library is commonly used for advanced network scanning?",
+            "options": [
+              "nmap",
+              "python-nmap",
+              "scapy",
+              "Both B and C"
+            ],
+            "correct_answer": 3,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "What does a SYN scan do?",
+            "options": [
+              "Completes the full TCP handshake",
+              "Sends only SYN packets without completing the handshake",
+              "Scans for UDP ports only",
+              "Performs OS fingerprinting"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "web-application-testing",
+      "title": "Web Application Security Testing",
+      "description": "Discover web vulnerabilities using Python tools and techniques including SQL injection, XSS, and authentication bypass.",
+      "video_url": "",
+      "created_at": "2025-01-20T10:45:00.000000",
+      "order": 4,
+      "quiz": {
+        "description": "Test your web application security knowledge",
+        "passing_score": 70,
+        "questions": [
+          {
+            "question": "What is SQL injection?",
+            "options": [
+              "A method to improve database performance",
+              "An attack that injects malicious SQL code into application queries",
+              "A database backup technique",
+              "A type of encryption"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "Which HTTP header is commonly used to prevent XSS attacks?",
+            "options": [
+              "Content-Security-Policy",
+              "X-Frame-Options",
+              "Strict-Transport-Security",
+              "X-Content-Type-Options"
+            ],
+            "correct_answer": 0,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "What does OWASP stand for?",
+            "options": [
+              "Open Web Application Security Project",
+              "Online Web Application Security Protocol",
+              "Organizational Web Application Security Platform",
+              "Official Web Application Security Policy"
+            ],
+            "correct_answer": 0,
+            "type": "multiple_choice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "password-security-cracking",
+      "title": "Password Security and Cracking Techniques",
+      "description": "Understand password security, implement hash cracking tools, and learn about modern authentication security measures.",
+      "video_url": "",
+      "created_at": "2025-01-20T11:00:00.000000",
+      "order": 5,
+      "quiz": {
+        "description": "Test your password security knowledge",
+        "passing_score": 70,
+        "questions": [
+          {
+            "question": "What is a rainbow table?",
+            "options": [
+              "A colorful data visualization",
+              "A precomputed table of hash values and their corresponding plaintext",
+              "A type of database table",
+              "A network routing table"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "Which hashing algorithm is considered more secure for password storage?",
+            "options": [
+              "MD5",
+              "SHA1",
+              "bcrypt",
+              "CRC32"
+            ],
+            "correct_answer": 2,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "What is the purpose of salt in password hashing?",
+            "options": [
+              "To make passwords taste better",
+              "To add randomness and prevent rainbow table attacks",
+              "To compress the hash",
+              "To encrypt the password"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "wireless-security-testing",
+      "title": "Wireless Network Security Testing",
+      "description": "Learn to assess WiFi security, capture wireless traffic, and understand common wireless attack vectors using Python.",
+      "video_url": "",
+      "created_at": "2025-01-20T11:15:00.000000",
+      "order": 6,
+      "quiz": {
+        "description": "Test your wireless security knowledge",
+        "passing_score": 70,
+        "questions": [
+          {
+            "question": "What is WEP?",
+            "options": [
+              "Wired Equivalent Privacy",
+              "Wireless Encryption Protocol",
+              "Web Encryption Platform",
+              "WiFi Enhanced Protection"
+            ],
+            "correct_answer": 0,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "Which is the most secure WiFi encryption protocol?",
+            "options": [
+              "WEP",
+              "WPA",
+              "WPA2",
+              "WPA3"
+            ],
+            "correct_answer": 3,
+            "type": "multiple_choice"
+          },
+          {
+            "question": "What is a deauthentication attack?",
+            "options": [
+              "An attack that removes user authentication",
+              "An attack that forces devices to disconnect from WiFi",
+              "An attack that steals authentication credentials",
+              "An attack that encrypts authentication data"
+            ],
+            "correct_answer": 1,
+            "type": "multiple_choice"
+          }
+        ]
+      }
     }
   ]
 }
