@@ -12,9 +12,9 @@
   --dark-color: #1f2937;
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   --border-radius: 16px;
-  --box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --app-background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #8b5cf6 100%);
+  --app-background: linear-gradient(135deg, #e7eee7 0%, #f2cad0 50%, #aeeaaf 100%);
   --navbar-height: 70px;
 }
 
@@ -54,7 +54,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
   pointer-events: none;
 }
 
@@ -65,14 +65,21 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
   animation: shimmer 3s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes shimmer {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .navbar-brand {
@@ -99,22 +106,22 @@ body {
   transition: var(--transition);
   position: relative;
   z-index: 2;
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .nav-link:hover {
-  background: rgba(255,255,255,0.95);
+  background: rgba(255, 255, 255, 0.95);
   color: var(--dark-color) !important;
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 .navbar-toggler {
   border: none;
   padding: 0.25rem 0.5rem;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
 }
 
@@ -139,7 +146,7 @@ main.container {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   main.container {
     padding-top: 1rem;
     padding-bottom: 1rem;
@@ -171,7 +178,7 @@ main.container {
 
 .module-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .module-card .card-body {
@@ -229,7 +236,7 @@ main.container {
 .progress {
   height: 8px;
   border-radius: 4px;
-  background-color: rgba(0,0,0,0.1);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .progress-bar {
@@ -277,7 +284,7 @@ main.container {
 }
 
 .quiz-options label:hover {
-  background: rgba(0,123,255,0.1);
+  background: rgba(0, 123, 255, 0.1);
 }
 
 /* Video player responsive */
@@ -310,7 +317,7 @@ main.container {
 
 #moduleNotes:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 /* Search functionality */
@@ -323,7 +330,7 @@ main.container {
 
 #moduleSearch:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 /* Smooth animations and hover effects */
@@ -347,7 +354,7 @@ main.container {
 }
 
 .card:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   transform: translateY(-1px);
 }
 
@@ -479,7 +486,8 @@ main.container {
   min-width: 60px;
 }
 
-.nav-item:hover, .nav-item.active {
+.nav-item:hover,
+.nav-item.active {
   color: var(--primary-color);
   background: rgba(0, 123, 255, 0.1);
   text-decoration: none;
@@ -498,7 +506,8 @@ main.container {
   line-height: 1.2;
 }
 
-.nav-item:hover .nav-icon, .nav-item.active .nav-icon {
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon {
   transform: scale(1.1);
 }
 
@@ -563,68 +572,69 @@ body {
   .module-card .card-body {
     padding: 1.5rem;
   }
-  
+
   .module-card .btn {
     width: 100%;
     margin-right: 0;
     margin-bottom: 0.75rem;
   }
-  
+
   .quiz-container {
     padding: 1.5rem;
     margin-bottom: 1rem;
     border-radius: var(--border-radius);
   }
-  
+
   .sticky-top {
     position: static;
     margin-top: 1.5rem;
   }
-  
+
   /* App-like list items */
   .list-group-item {
     border: none;
     border-radius: 12px !important;
     margin-bottom: 0.5rem;
     background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 1rem 1.25rem;
     font-weight: 500;
   }
-  
+
   .list-group-item:hover {
     background: var(--light-color);
     transform: translateY(-1px);
   }
-  
+
   /* Hide top navbar on small screens, show footer nav */
   .navbar {
     display: none;
   }
-  
+
   main.container {
     padding-top: 1rem;
   }
 }
 
 @media (min-width: 769px) {
+
   /* Keep footer nav visible on larger screens but adjust styling */
   .footer-nav {
     position: relative;
     border-top: 2px solid rgba(0, 0, 0, 0.1);
     margin-top: 3rem;
   }
-  
+
   .nav-items {
     max-width: 800px;
     justify-content: center;
     gap: 2rem;
   }
-  
+
   .nav-item {
     min-width: 80px;
   }
-  
+
   body {
     padding-bottom: 0;
   }
@@ -636,11 +646,11 @@ body {
     min-height: 44px;
     padding: 0.75rem 1.5rem;
   }
-  
+
   .form-control {
     min-height: 44px;
   }
-  
+
   .module-card:hover {
     transform: none;
   }
@@ -653,7 +663,7 @@ body {
     background: white;
     color: var(--dark-color);
   }
-  
+
   .progress-bar {
     background: var(--dark-color);
   }
@@ -689,7 +699,7 @@ body {
 .modal-content {
   border-radius: var(--border-radius);
   border: none;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
@@ -711,7 +721,7 @@ body {
 }
 
 /* Default content spans full width */
-.module-content > * {
+.module-content>* {
   grid-column: 1 / -1;
 }
 
@@ -720,7 +730,8 @@ body {
 .module-content img:not(figure img) {
   grid-column: 1 / -1;
   margin: 1.5rem 0;
-  aspect-ratio: 16 / 9; /* Consistent aspect ratio for all images */
+  aspect-ratio: 16 / 9;
+  /* Consistent aspect ratio for all images */
   overflow: hidden;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
@@ -728,7 +739,7 @@ body {
 }
 
 .module-content figure.image:hover {
-  box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
 }
 
 /* Force all images to fill their containers uniformly */
@@ -769,17 +780,28 @@ body {
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   color: var(--secondary-color);
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   border-radius: 0 0 var(--border-radius) var(--border-radius);
   margin-top: -var(--border-radius);
   font-style: italic;
 }
 
 /* Optional grid span utilities for future variants */
-.module-content .img-span-12 { grid-column: span 12; }
-.module-content .img-span-8 { grid-column: span 8; }
-.module-content .img-span-6 { grid-column: span 6; }
-.module-content .img-span-4 { grid-column: span 4; }
+.module-content .img-span-12 {
+  grid-column: span 12;
+}
+
+.module-content .img-span-8 {
+  grid-column: span 8;
+}
+
+.module-content .img-span-6 {
+  grid-column: span 6;
+}
+
+.module-content .img-span-4 {
+  grid-column: span 4;
+}
 
 /* Text content formatting within grid */
 .module-content p,
@@ -837,14 +859,15 @@ body {
     --content-gap: 1rem;
     grid-template-columns: 1fr;
   }
-  
+
   .module-content [class^="img-span-"] {
     grid-column: 1 / -1;
   }
-  
+
   .module-content figure.image,
   .module-content img:not(figure img) {
     margin: 1rem 0;
-    aspect-ratio: 4 / 3; /* Slightly taller aspect ratio for mobile */
+    aspect-ratio: 4 / 3;
+    /* Slightly taller aspect ratio for mobile */
   }
 }
