@@ -1298,6 +1298,11 @@ def generate_certificate(module_id):
     subtitle_y = height - template['margin_subtitle']
     c.drawCentredString(width / 2, subtitle_y, subtitle_text)
 
+    # User's full name (prominent display)
+    c.setFont("Helvetica-Bold", template['font_size_module'])
+    name_y = height - template['margin_module'] + 30
+    c.drawCentredString(width / 2, name_y, full_name)
+
     # Module name
     c.setFont("Helvetica-Bold", template['font_size_module'])
     module_text = f'"{module["title"]}"'
