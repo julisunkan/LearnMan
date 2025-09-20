@@ -11,9 +11,11 @@ import requests
 from PIL import Image
 import markdown
 import trafilatura
+import bleach
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file, make_response
+from markupsafe import Markup
 from werkzeug.utils import secure_filename
 
 # Blueprint integration reference for OpenAI
@@ -29,6 +31,52 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 openai_client = None
 if os.environ.get('OPENAI_API_KEY'):
     openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+
+# HTML sanitization configuration
+ALLOWED_TAGS = [
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'strong', 'em', 'b', 'i',
+    'code', 'pre', 'blockquote', 'img', 'table', 'tr', 'td', 'th', 'thead', 'tbody', 'hr', 'br',
+    'div', 'span'
+]
+
+ALLOWED_ATTRIBUTES = {
+    'a': ['href', 'title', 'rel'],
+    'img': ['src', 'alt', 'title', 'width', 'height'],
+    'table': ['class'],
+    'td': ['colspan', 'rowspan'],
+    'th': ['colspan', 'rowspan'],
+    'div': ['class'],
+    'span': ['class']
+}
+
+ALLOWED_PROTOCOLS = ['http', 'https', 'mailto']
+
+def sanitize_html(content):
+    """Sanitize HTML content to prevent XSS while allowing safe formatting"""
+    if not content:
+        return ""
+    
+    # First clean with bleach
+    cleaned_content = bleach.clean(
+        content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        protocols=ALLOWED_PROTOCOLS,
+        strip=True
+    )
+    
+    # Add rel="noopener noreferrer" to external links for security
+    def add_rel_attributes(attrs, new=False):
+        attrs[None, 'rel'] = 'noopener noreferrer'
+        return attrs
+    
+    cleaned_content = bleach.linkify(
+        cleaned_content,
+        parse_email=True,
+        callbacks=[add_rel_attributes]
+    )
+    
+    return cleaned_content
 
 # Database initialization
 def init_database():
@@ -55,6 +103,8 @@ def init_database():
         CREATE TABLE IF NOT EXISTS module_content (
             module_id TEXT PRIMARY KEY,
             content TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (module_id) REFERENCES modules (id) ON DELETE CASCADE
         )
     ''')
@@ -542,17 +592,50 @@ def update_module_in_db(module):
     conn.close()
 
 def save_module_content(module_id, content):
-    """Save module content to database"""
+    """Save module content to database with backward-compatible timestamps"""
     conn = None
     try:
         conn = sqlite3.connect('data/tutorial_platform.db')
         conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
         cursor = conn.cursor()
         
-        cursor.execute('''
-            INSERT OR REPLACE INTO module_content (module_id, content)
-            VALUES (?, ?)
-        ''', (module_id, content))
+        # Check if the table has timestamp columns
+        cursor.execute("PRAGMA table_info(module_content)")
+        columns = [column[1] for column in cursor.fetchall()]
+        has_timestamps = 'created_at' in columns and 'updated_at' in columns
+        
+        # Check if content already exists
+        cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
+        existing = cursor.fetchone()
+        
+        current_time = datetime.now().isoformat()
+        
+        if existing:
+            # Update existing content
+            if has_timestamps:
+                cursor.execute('''
+                    UPDATE module_content 
+                    SET content = ?, updated_at = ?
+                    WHERE module_id = ?
+                ''', (content, current_time, module_id))
+            else:
+                cursor.execute('''
+                    UPDATE module_content 
+                    SET content = ?
+                    WHERE module_id = ?
+                ''', (content, module_id))
+        else:
+            # Insert new content
+            if has_timestamps:
+                cursor.execute('''
+                    INSERT INTO module_content (module_id, content, created_at, updated_at)
+                    VALUES (?, ?, ?, ?)
+                ''', (module_id, content, current_time, current_time))
+            else:
+                cursor.execute('''
+                    INSERT INTO module_content (module_id, content)
+                    VALUES (?, ?)
+                ''', (module_id, content))
         
         conn.commit()
     finally:
@@ -560,7 +643,7 @@ def save_module_content(module_id, content):
             conn.close()
 
 def load_module_content(module_id):
-    """Load module content from database"""
+    """Load module content from database with legacy file migration"""
     conn = None
     try:
         conn = sqlite3.connect('data/tutorial_platform.db')
@@ -570,7 +653,25 @@ def load_module_content(module_id):
         cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
         result = cursor.fetchone()
         
-        return result[0] if result else None
+        if result:
+            return result[0]
+        
+        # Check for legacy HTML file and migrate it
+        legacy_file_path = f'data/modules/{module_id}.html'
+        if os.path.exists(legacy_file_path):
+            try:
+                with open(legacy_file_path, 'r', encoding='utf-8') as f:
+                    legacy_content = f.read()
+                    
+                # Save legacy content to database
+                save_module_content(module_id, legacy_content)
+                
+                # Return the migrated content
+                return legacy_content
+            except Exception as e:
+                print(f"Error migrating legacy content for module {module_id}: {e}")
+        
+        return None
     finally:
         if conn:
             conn.close()
@@ -836,10 +937,12 @@ def module_detail(module_id):
         flash('Module not found', 'error')
         return redirect(url_for('index'))
     
-    # Load module content from database
-    module['content'] = load_module_content(module_id)
-    if not module['content']:
-        module['content'] = "<p>No content available for this module.</p>"
+    # Load module content from database and sanitize it
+    raw_content = load_module_content(module_id)
+    if raw_content:
+        module['content'] = Markup(sanitize_html(raw_content))
+    else:
+        module['content'] = Markup("<p>No content available for this module.</p>")
     
     config = load_config()
     response = make_response(render_template('module.html', 

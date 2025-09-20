@@ -36,7 +36,8 @@
             
             <div class="mb-3">
                 <label for="content" class="form-label">Module Content</label>
-                <textarea id="content" name="content">{{ module.content if module else '' }}</textarea>
+                <div id="editor"></div>
+                <textarea id="content" name="content" style="display: none;">{{ module.content if module else '' }}</textarea>
             </div>
             
             <div class="mb-3">
@@ -65,82 +66,96 @@
 <script>
     let editor;
     
-    ClassicEditor
-        .create(document.querySelector('#content'), {
-            toolbar: [
-                'heading', '|', 
-                'bold', 'italic', 'link', '|',
-                'bulletedList', 'numberedList', '|', 
-                'outdent', 'indent', '|', 
-                'blockQuote', 'insertTable', '|',
-                'imageUpload', 'mediaEmbed', '|',
-                'undo', 'redo'
-            ],
-            image: {
-                resizeUnit: '%',
-                resizeOptions: [
-                    {
-                        name: 'resizeImage:original',
-                        value: null,
-                        label: 'Original size'
-                    },
-                    {
-                        name: 'resizeImage:25',
-                        value: '25',
-                        label: '25%'
-                    },
-                    {
-                        name: 'resizeImage:50',
-                        value: '50',
-                        label: '50%'
-                    },
-                    {
-                        name: 'resizeImage:75',
-                        value: '75',
-                        label: '75%'
-                    }
-                ],
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get initial content from the hidden textarea
+        const initialContent = document.getElementById('content').value;
+        
+        ClassicEditor
+            .create(document.querySelector('#editor'), {
                 toolbar: [
-                    'imageTextAlternative', 'toggleImageCaption', '|',
-                    'imageStyle:alignLeft', 'imageStyle:alignCenter', 'imageStyle:alignRight', '|',
-                    'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'
+                    'heading', '|', 
+                    'bold', 'italic', 'link', '|',
+                    'bulletedList', 'numberedList', '|', 
+                    'outdent', 'indent', '|', 
+                    'blockQuote', 'insertTable', '|',
+                    'imageUpload', 'mediaEmbed', '|',
+                    'undo', 'redo'
                 ],
-                styles: [
-                    'alignLeft', 'alignCenter', 'alignRight'
-                ]
-            },
-            simpleUpload: {
-                uploadUrl: '/admin/upload-image',
-                headers: {
-                    'X-CSRF-Token': '{{ csrf_token() }}'
+                image: {
+                    resizeUnit: '%',
+                    resizeOptions: [
+                        {
+                            name: 'resizeImage:original',
+                            value: null,
+                            label: 'Original size'
+                        },
+                        {
+                            name: 'resizeImage:25',
+                            value: '25',
+                            label: '25%'
+                        },
+                        {
+                            name: 'resizeImage:50',
+                            value: '50',
+                            label: '50%'
+                        },
+                        {
+                            name: 'resizeImage:75',
+                            value: '75',
+                            label: '75%'
+                        }
+                    ],
+                    toolbar: [
+                        'imageTextAlternative', 'toggleImageCaption', '|',
+                        'imageStyle:alignLeft', 'imageStyle:alignCenter', 'imageStyle:alignRight', '|',
+                        'resizeImage:25', 'resizeImage:50', 'resizeImage:75', 'resizeImage:original'
+                    ],
+                    styles: [
+                        'alignLeft', 'alignCenter', 'alignRight'
+                    ]
+                },
+                simpleUpload: {
+                    uploadUrl: '/admin/upload-image',
+                    headers: {
+                        'X-CSRF-Token': '{{ csrf_token() }}'
+                    }
                 }
-            }
-        })
-        .then(newEditor => {
-            editor = newEditor;
-            
-            // Update preview on content change
-            editor.model.document.on('change:data', () => {
-                const data = editor.getData();
-                document.getElementById('contentPreview').innerHTML = data || '<p class="text-muted">Content preview will appear here as you type.</p>';
+            })
+            .then(function(newEditor) {
+                editor = newEditor;
+                
+                // Set initial content if available
+                if (initialContent) {
+                    editor.setData(initialContent);
+                }
+                
+                // Sync content to hidden textarea whenever content changes
+                editor.model.document.on('change:data', function() {
+                    const data = editor.getData();
+                    document.getElementById('content').value = data;
+                    
+                    // Update preview
+                    const previewDiv = document.getElementById('contentPreview');
+                    previewDiv.innerHTML = data || '<p class="text-muted">Content preview will appear here as you type.</p>';
+                });
+                
+                // Initial preview update
+                const currentContent = editor.getData();
+                if (currentContent) {
+                    document.getElementById('contentPreview').innerHTML = currentContent;
+                }
+            })
+            .catch(function(error) {
+                console.error('CKEditor initialization error:', error);
             });
-            
-            // Initial preview
-            const initialContent = editor.getData();
-            if (initialContent) {
-                document.getElementById('contentPreview').innerHTML = initialContent;
+        
+        // Form submission handler to ensure content is synced
+        document.getElementById('moduleForm').addEventListener('submit', function(e) {
+            if (editor) {
+                const currentData = editor.getData();
+                document.getElementById('content').value = currentData;
             }
-        })
-        .catch(error => {
-            console.error(error);
         });
-    
-    // Handle form submission to sync CKEditor data
-    document.getElementById('moduleForm').addEventListener('submit', function(e) {
-        if (editor) {
-            // Update the textarea with CKEditor content before submission
-            document.getElementById('content').value = editor.getData();
-        }
     });
 </script>
 {% endblock %}
