@@ -1146,6 +1146,18 @@ def after_request(response):
 
 @app.route('/certificate/<module_id>')
 def generate_certificate(module_id):
+    # Get the user's full name from query parameter
+    full_name = request.args.get('name', '').strip()
+    
+    if not full_name:
+        flash('Full name is required for certificate generation', 'error')
+        return redirect(url_for('module_detail', module_id=module_id))
+    
+    # Validate full name (basic security check)
+    if len(full_name) > 100 or any(char in full_name for char in ['<', '>', '"', "'", '&']):
+        flash('Invalid name provided', 'error')
+        return redirect(url_for('module_detail', module_id=module_id))
+
     courses_data = load_courses()
     module = None
 
@@ -1245,11 +1257,11 @@ def generate_certificate(module_id):
     title_y = height - template['margin_top'] - (template['logo_height'] if template.get('logo_url') else 0) - (template['font_size_title'] * 0.5) # Adjust y based on logo
     c.drawCentredString(width / 2, title_y, text)
 
-    # Certificate subtitle
+    # Certificate subtitle (replace {FULL NAME} placeholder with actual name)
     c.setFont("Helvetica", template['font_size_subtitle'])
-    text = template['subtitle']
+    subtitle_text = template['subtitle'].replace('{FULL NAME}', full_name)
     subtitle_y = height - template['margin_subtitle']
-    c.drawCentredString(width / 2, subtitle_y, text)
+    c.drawCentredString(width / 2, subtitle_y, subtitle_text)
 
     # Module name
     c.setFont("Helvetica-Bold", template['font_size_module'])
