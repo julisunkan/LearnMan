@@ -193,6 +193,12 @@
                                 <label for="font_size_signature" class="form-label">Signature Font Size</label>
                                 <input type="number" class="form-control" id="font_size_signature" name="font_size_signature" value="{{ template.font_size_signature if template else 10 }}" min="6" max="20">
                             </div>
+
+                            <div class="mb-3">
+                                <label for="font_size_completion" class="form-label">Completion Text Font Size</label>
+                                <input type="number" class="form-control" id="font_size_completion" name="font_size_completion" value="{{ template.font_size_completion if template else 18 }}" min="10" max="32">
+                                <div class="form-text">Font size for "Module Completed by [Name]" text</div>
+                            </div>
                         </div>
                         
                         <div class="col-md-6">
@@ -226,6 +232,12 @@
                             <div class="mb-3">
                                 <label for="margin_signature" class="form-label">Signature Margin</label>
                                 <input type="number" class="form-control" id="margin_signature" name="margin_signature" value="{{ template.margin_signature if template else 500 }}" min="300" max="650">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="margin_completion" class="form-label">Completion Text Margin</label>
+                                <input type="number" class="form-control" id="margin_completion" name="margin_completion" value="{{ template.margin_completion if template else 280 }}" min="150" max="450">
+                                <div class="form-text">Position from top for "Module Completed by [Name]" text</div>
                             </div>
                         </div>
                     </div>
@@ -283,6 +295,7 @@
                     <div id="previewHeader" style="position: absolute; left: 50%; transform: translateX(-50%); top: 55px; text-align: center; width: 100%; font-size: 9px; font-weight: bold;"></div>
                     <div id="previewTitle" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%;">Certificate of Completion</div>
                     <div id="previewSubtitle" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">This certifies that you have successfully completed:</div>
+                    <div id="previewCompletion" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%; color: #4a90e2;">Module Completed by Sample Name</div>
                     <div id="previewModule" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%;">Sample Module Name</div>
                     <div id="previewDate" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">Date: September 20, 2025</div>
                     <div id="previewFooter" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;"></div>
@@ -329,6 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const title = document.getElementById('previewTitle');
         const subtitle = document.getElementById('previewSubtitle');
         const module = document.getElementById('previewModule');
+        const completion = document.getElementById('previewCompletion');
         const date = document.getElementById('previewDate');
         const footer = document.getElementById('previewFooter');
         const sigName = document.getElementById('previewSigName');
@@ -349,12 +363,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateSize = document.getElementById('font_size_date').value || 12;
         const headerSize = document.getElementById('font_size_header').value || 14;
         const footerSize = document.getElementById('font_size_footer').value || 12;
+        const completionSize = document.getElementById('font_size_completion').value || 18;
         
         const titleMargin = document.getElementById('margin_top').value || 100;
         const subtitleMargin = document.getElementById('margin_subtitle').value || 200;
         const moduleMargin = document.getElementById('margin_module').value || 250;
         const dateMargin = document.getElementById('margin_date').value || 350;
         const footerMargin = document.getElementById('margin_footer').value || 450;
+        const completionMargin = document.getElementById('margin_completion').value || 280;
         
         const bgColor = document.getElementById('background_color').value || '#FFFFFF';
         const textColor = document.getElementById('text_color').value || '#000000';
@@ -386,6 +402,9 @@ document.addEventListener('DOMContentLoaded', function() {
         subtitle.textContent = subtitleText;
         subtitle.style.fontSize = (subtitleSize * 0.3) + 'px';
         subtitle.style.top = (subtitleMargin * 0.3) + 'px';
+        
+        completion.style.fontSize = (completionSize * 0.3) + 'px';
+        completion.style.top = (completionMargin * 0.3) + 'px';
         
         module.style.fontSize = (moduleSize * 0.3) + 'px';
         module.style.top = (moduleMargin * 0.3) + 'px';

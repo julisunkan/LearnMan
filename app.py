@@ -165,7 +165,9 @@ def init_database():
         ('logo_width', 'INTEGER DEFAULT 100'),
         ('logo_height', 'INTEGER DEFAULT 50'),
         ('signature_width', 'INTEGER DEFAULT 150'),
-        ('signature_height', 'INTEGER DEFAULT 40')
+        ('signature_height', 'INTEGER DEFAULT 40'),
+        ('font_size_completion', 'INTEGER DEFAULT 20'), # New column
+        ('margin_completion', 'INTEGER DEFAULT 300')    # New column
     ]
 
     for column_name, column_def in new_columns:
@@ -201,9 +203,9 @@ def create_default_certificate_template():
                 id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
                 font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
                 margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
-                logo_width, logo_height, signature_width, signature_height,
+                logo_width, logo_height, signature_width, signature_height, font_size_completion, margin_completion,
                 background_color, text_color, is_default, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             template_id,
             'Default Certificate',
@@ -218,7 +220,7 @@ def create_default_certificate_template():
             '', # Default signature_title
             24, 16, 20, 12, 14, 10, 12, # Font sizes
             100, 200, 250, 350, 400, 420, # Margins
-            100, 50, 150, 40, # Logo and signature dimensions
+            100, 50, 150, 40, 20, 300, # Logo and signature dimensions, completion settings
             '#ffffff', '#000000',
             1,
             datetime.now().isoformat()
@@ -322,8 +324,7 @@ def get_certificate_templates():
         SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
                font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
                margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
-               logo_width, logo_height, signature_width, signature_height,
-               background_color, text_color, is_default, created_at
+               logo_width, logo_height, signature_width, signature_height, background_color, text_color, is_default, created_at
         FROM certificate_templates ORDER BY is_default DESC, name ASC
     ''')
 
@@ -377,8 +378,7 @@ def get_certificate_template(template_id):
         SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
                font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
                margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
-               logo_width, logo_height, signature_width, signature_height,
-               background_color, text_color, is_default, created_at
+               logo_width, logo_height, signature_width, signature_height, background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE id = ?
     ''', (template_id,))
 
@@ -407,20 +407,22 @@ def get_certificate_template(template_id):
         'font_size_header': row[15],
         'font_size_footer': row[16],
         'font_size_signature': row[17],
-        'margin_top': row[18],
-        'margin_subtitle': row[19],
-        'margin_module': row[20],
-        'margin_date': row[21],
-        'margin_footer': row[22],
-        'margin_signature': row[23],
-        'logo_width': row[24],
-        'logo_height': row[25],
-        'signature_width': row[26],
-        'signature_height': row[27],
-        'background_color': row[28],
-        'text_color': row[29],
-        'is_default': row[30],
-        'created_at': row[31]
+        'font_size_completion': row[18],
+        'margin_top': row[19],
+        'margin_subtitle': row[20],
+        'margin_module': row[21],
+        'margin_date': row[22],
+        'margin_footer': row[23],
+        'margin_signature': row[24],
+        'margin_completion': row[25],
+        'logo_width': row[26],
+        'logo_height': row[27],
+        'signature_width': row[28],
+        'signature_height': row[29],
+        'background_color': row[30],
+        'text_color': row[31],
+        'is_default': row[32],
+        'created_at': row[33]
     }
 
 def get_default_certificate_template():
@@ -432,8 +434,7 @@ def get_default_certificate_template():
         SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
                font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
                margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
-               logo_width, logo_height, signature_width, signature_height,
-               background_color, text_color, is_default, created_at
+               logo_width, logo_height, signature_width, signature_height, background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE is_default = 1 LIMIT 1
     ''')
 
@@ -462,20 +463,22 @@ def get_default_certificate_template():
         'font_size_header': row[15],
         'font_size_footer': row[16],
         'font_size_signature': row[17],
-        'margin_top': row[18],
-        'margin_subtitle': row[19],
-        'margin_module': row[20],
-        'margin_date': row[21],
-        'margin_footer': row[22],
-        'margin_signature': row[23],
-        'logo_width': row[24],
-        'logo_height': row[25],
-        'signature_width': row[26],
-        'signature_height': row[27],
-        'background_color': row[28],
-        'text_color': row[29],
-        'is_default': row[30],
-        'created_at': row[31]
+        'font_size_completion': row[18],
+        'margin_top': row[19],
+        'margin_subtitle': row[20],
+        'margin_module': row[21],
+        'margin_date': row[22],
+        'margin_footer': row[23],
+        'margin_signature': row[24],
+        'margin_completion': row[25],
+        'logo_width': row[26],
+        'logo_height': row[27],
+        'signature_width': row[28],
+        'signature_height': row[29],
+        'background_color': row[30],
+        'text_color': row[31],
+        'is_default': row[32],
+        'created_at': row[33]
     }
 
 def save_certificate_template(template_data):
@@ -495,7 +498,8 @@ def save_certificate_template(template_data):
                 font_size_title = ?, font_size_subtitle = ?, font_size_module = ?, font_size_date = ?, font_size_header = ?, font_size_footer = ?, font_size_signature = ?,
                 margin_top = ?, margin_subtitle = ?, margin_module = ?, margin_date = ?, margin_footer = ?, margin_signature = ?,
                 logo_width = ?, logo_height = ?, signature_width = ?, signature_height = ?,
-                background_color = ?, text_color = ?, is_default = ?
+                background_color = ?, text_color = ?, is_default = ?,
+                font_size_completion = ?, margin_completion = ?
             WHERE id = ?
         ''', (
             template_data['name'],
@@ -528,6 +532,8 @@ def save_certificate_template(template_data):
             template_data['background_color'],
             template_data['text_color'],
             template_data.get('is_default', 0),
+            template_data.get('font_size_completion', 20),
+            template_data.get('margin_completion', 300),
             template_data['id']
         ))
     else:
@@ -538,9 +544,9 @@ def save_certificate_template(template_data):
                 id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
                 font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
                 margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
-                logo_width, logo_height, signature_width, signature_height,
+                logo_width, logo_height, signature_width, signature_height, font_size_completion, margin_completion,
                 background_color, text_color, is_default, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             template_id,
             template_data['name'],
@@ -570,6 +576,8 @@ def save_certificate_template(template_data):
             template_data['logo_height'],
             template_data['signature_width'],
             template_data['signature_height'],
+            template_data.get('font_size_completion', 20),
+            template_data.get('margin_completion', 300),
             template_data['background_color'],
             template_data['text_color'],
             template_data.get('is_default', 0),
@@ -1193,12 +1201,14 @@ def generate_certificate(module_id):
             'font_size_header': 14,
             'font_size_footer': 10,
             'font_size_signature': 12,
+            'font_size_completion': 20, # Default for new field
             'margin_top': 100,
             'margin_subtitle': 200,
             'margin_module': 250,
             'margin_date': 350,
             'margin_footer': 400,
             'margin_signature': 420,
+            'margin_completion': 300, # Default for new field
             'logo_width': 100,
             'logo_height': 50,
             'signature_width': 150,
@@ -1349,8 +1359,8 @@ def generate_certificate(module_id):
             c.drawCentredString(width / 2, subtitle_y, parts[0].strip())
 
             # User's full name in requested format (prominent display with elegant styling)
-            name_y = subtitle_y - 50
-            c.setFont("Times-Bold", template['font_size_module'] + 4)
+            name_y = height - template['margin_completion']
+            c.setFont("Times-Bold", template['font_size_completion'])
             c.setFillColorRGB(*accent_color)
 
             # Format: "Module Completed by {FULL NAME}"
@@ -1366,8 +1376,8 @@ def generate_certificate(module_id):
         else:
             c.drawCentredString(width / 2, subtitle_y, subtitle_text)
             # User's full name in requested format (prominent display with elegant styling)
-            name_y = subtitle_y - 50
-            c.setFont("Times-Bold", template['font_size_module'] + 4)
+            name_y = height - template['margin_completion']
+            c.setFont("Times-Bold", template['font_size_completion'])
             c.setFillColorRGB(*accent_color)
 
             # Format: "Module Completed by {FULL NAME}"
@@ -1377,8 +1387,8 @@ def generate_certificate(module_id):
     else:
         c.drawCentredString(width / 2, subtitle_y, subtitle_text)
         # User's full name in requested format (prominent display with elegant styling)
-        name_y = subtitle_y - 50
-        c.setFont("Times-Bold", template['font_size_module'] + 4)
+        name_y = height - template['margin_completion']
+        c.setFont("Times-Bold", template['font_size_completion'])
         c.setFillColorRGB(*accent_color)
 
         # Format: "Module Completed by {FULL NAME}"
@@ -1960,12 +1970,14 @@ def admin_new_certificate_template():
             'font_size_header': int(request.form.get('font_size_header', 14)),
             'font_size_footer': int(request.form.get('font_size_footer', 10)),
             'font_size_signature': int(request.form.get('font_size_signature', 12)),
+            'font_size_completion': int(request.form.get('font_size_completion', 20)), # New
             'margin_top': int(request.form.get('margin_top', 100)),
             'margin_subtitle': int(request.form.get('margin_subtitle', 200)),
             'margin_module': int(request.form.get('margin_module', 250)),
             'margin_date': int(request.form.get('margin_date', 350)),
             'margin_footer': int(request.form.get('margin_footer', 400)),
             'margin_signature': int(request.form.get('margin_signature', 420)),
+            'margin_completion': int(request.form.get('margin_completion', 300)), # New
             'logo_width': int(request.form.get('logo_width', 100)),
             'logo_height': int(request.form.get('logo_height', 50)),
             'signature_width': int(request.form.get('signature_width', 150)),
@@ -2022,12 +2034,14 @@ def admin_edit_certificate_template(template_id):
             'font_size_header': int(request.form.get('font_size_header', 14)),
             'font_size_footer': int(request.form.get('font_size_footer', 10)),
             'font_size_signature': int(request.form.get('font_size_signature', 12)),
+            'font_size_completion': int(request.form.get('font_size_completion', 20)), # New
             'margin_top': int(request.form.get('margin_top', 100)),
             'margin_subtitle': int(request.form.get('margin_subtitle', 200)),
             'margin_module': int(request.form.get('margin_module', 250)),
             'margin_date': int(request.form.get('margin_date', 350)),
             'margin_footer': int(request.form.get('margin_footer', 400)),
             'margin_signature': int(request.form.get('margin_signature', 420)),
+            'margin_completion': int(request.form.get('margin_completion', 300)), # New
             'logo_width': int(request.form.get('logo_width', 100)),
             'logo_height': int(request.form.get('logo_height', 50)),
             'signature_width': int(request.form.get('signature_width', 150)),
