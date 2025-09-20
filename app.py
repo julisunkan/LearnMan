@@ -322,8 +322,8 @@ def get_certificate_templates():
 
     cursor.execute('''
         SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
-               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
-               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature, font_size_completion,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature, margin_completion,
                logo_width, logo_height, signature_width, signature_height, background_color, text_color, is_default, created_at
         FROM certificate_templates ORDER BY is_default DESC, name ASC
     ''')
@@ -349,20 +349,22 @@ def get_certificate_templates():
             'font_size_header': row[15],
             'font_size_footer': row[16],
             'font_size_signature': row[17],
-            'margin_top': row[18],
-            'margin_subtitle': row[19],
-            'margin_module': row[20],
-            'margin_date': row[21],
-            'margin_footer': row[22],
-            'margin_signature': row[23],
-            'logo_width': row[24],
-            'logo_height': row[25],
-            'signature_width': row[26],
-            'signature_height': row[27],
-            'background_color': row[28],
-            'text_color': row[29],
-            'is_default': row[30],
-            'created_at': row[31]
+            'font_size_completion': row[18],
+            'margin_top': row[19],
+            'margin_subtitle': row[20],
+            'margin_module': row[21],
+            'margin_date': row[22],
+            'margin_footer': row[23],
+            'margin_signature': row[24],
+            'margin_completion': row[25],
+            'logo_width': row[26],
+            'logo_height': row[27],
+            'signature_width': row[28],
+            'signature_height': row[29],
+            'background_color': row[30],
+            'text_color': row[31],
+            'is_default': row[32],
+            'created_at': row[33]
         }
         templates.append(template)
 
@@ -376,8 +378,8 @@ def get_certificate_template(template_id):
 
     cursor.execute('''
         SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
-               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
-               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature, font_size_completion,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature, margin_completion,
                logo_width, logo_height, signature_width, signature_height, background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE id = ?
     ''', (template_id,))
@@ -432,8 +434,8 @@ def get_default_certificate_template():
 
     cursor.execute('''
         SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
-               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
-               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature, font_size_completion,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature, margin_completion,
                logo_width, logo_height, signature_width, signature_height, background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE is_default = 1 LIMIT 1
     ''')
