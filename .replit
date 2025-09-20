@@ -17,10 +17,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Tutorial Platform"
+args = "Flask App"
 
 [[workflows.workflow]]
-name = "Tutorial Platform"
+name = "Flask App"
 author = "agent"
 
 [[workflows.workflow.tasks]]
