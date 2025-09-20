@@ -1361,7 +1361,8 @@ def generate_certificate(module_id):
             c.drawCentredString(width / 2, subtitle_y, parts[0].strip())
 
             # User's full name in requested format (prominent display with elegant styling)
-            name_y = height - template['margin_completion']
+            # Ensure adequate spacing by positioning completion text well below subtitle
+            name_y = min(height - template['margin_completion'], subtitle_y - 120)
             c.setFont("Times-Bold", template['font_size_completion'])
             c.setFillColorRGB(*accent_color)
 
@@ -1369,7 +1370,7 @@ def generate_certificate(module_id):
             completion_text = f"Module Completed by {full_name}"
             c.drawCentredString(width / 2, name_y, completion_text)
 
-            # Draw second part
+            # Draw second part with proper spacing below completion text
             c.setFont("Times-Roman", template['font_size_subtitle'] + 2)
             c.setFillColorRGB(*text_color)
             c.drawCentredString(width / 2, name_y - 50, parts[1].strip())
@@ -1378,7 +1379,8 @@ def generate_certificate(module_id):
         else:
             c.drawCentredString(width / 2, subtitle_y, subtitle_text)
             # User's full name in requested format (prominent display with elegant styling)
-            name_y = height - template['margin_completion']
+            # Ensure adequate spacing by positioning completion text well below subtitle
+            name_y = min(height - template['margin_completion'], subtitle_y - 120)
             c.setFont("Times-Bold", template['font_size_completion'])
             c.setFillColorRGB(*accent_color)
 
@@ -1389,7 +1391,8 @@ def generate_certificate(module_id):
     else:
         c.drawCentredString(width / 2, subtitle_y, subtitle_text)
         # User's full name in requested format (prominent display with elegant styling)
-        name_y = height - template['margin_completion']
+        # Ensure adequate spacing by positioning completion text well below subtitle
+        name_y = min(height - template['margin_completion'], subtitle_y - 120)
         c.setFont("Times-Bold", template['font_size_completion'])
         c.setFillColorRGB(*accent_color)
 
