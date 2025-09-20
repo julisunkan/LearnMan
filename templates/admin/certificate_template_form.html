@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block content %}
@@ -39,6 +40,41 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Company Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Company Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="company_name" class="form-label">Company Name</label>
+                        <input type="text" class="form-control" id="company_name" name="company_name" value="{{ template.company_name if template else '' }}">
+                        <div class="form-text">Your organization or company name</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="logo_url" class="form-label">Company Logo URL</label>
+                        <input type="url" class="form-control" id="logo_url" name="logo_url" value="{{ template.logo_url if template else '' }}">
+                        <div class="form-text">URL to your company logo image (e.g., /static/resources/logo.png)</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="logo_width" class="form-label">Logo Width (pixels)</label>
+                                <input type="number" class="form-control" id="logo_width" name="logo_width" value="{{ template.logo_width if template else 100 }}" min="50" max="300">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="logo_height" class="form-label">Logo Height (pixels)</label>
+                                <input type="number" class="form-control" id="logo_height" name="logo_height" value="{{ template.logo_height if template else 50 }}" min="25" max="200">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Certificate Text Content -->
             <div class="card mb-4">
@@ -47,9 +83,15 @@
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
+                        <label for="header_text" class="form-label">Header Text (Optional)</label>
+                        <input type="text" class="form-control" id="header_text" name="header_text" value="{{ template.header_text if template else '' }}">
+                        <div class="form-text">Text shown at the very top of the certificate</div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="title" class="form-label">Certificate Title</label>
                         <input type="text" class="form-control" id="title" name="title" value="{{ template.title if template else 'Certificate of Completion' }}" required>
-                        <div class="form-text">The main title shown at the top of the certificate</div>
+                        <div class="form-text">The main title shown on the certificate</div>
                     </div>
                     
                     <div class="mb-3">
@@ -65,6 +107,47 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Signature Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Signature Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="signature_url" class="form-label">Signature Image URL (Optional)</label>
+                        <input type="url" class="form-control" id="signature_url" name="signature_url" value="{{ template.signature_url if template else '' }}">
+                        <div class="form-text">URL to signature image (e.g., /static/resources/signature.png)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="signature_name" class="form-label">Signatory Name</label>
+                        <input type="text" class="form-control" id="signature_name" name="signature_name" value="{{ template.signature_name if template else '' }}">
+                        <div class="form-text">Name of the person signing the certificate</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="signature_title" class="form-label">Signatory Title</label>
+                        <input type="text" class="form-control" id="signature_title" name="signature_title" value="{{ template.signature_title if template else '' }}">
+                        <div class="form-text">Title or position of the signatory (e.g., "CEO", "Training Director")</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="signature_width" class="form-label">Signature Width (pixels)</label>
+                                <input type="number" class="form-control" id="signature_width" name="signature_width" value="{{ template.signature_width if template else 150 }}" min="100" max="300">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="signature_height" class="form-label">Signature Height (pixels)</label>
+                                <input type="number" class="form-control" id="signature_height" name="signature_height" value="{{ template.signature_height if template else 75 }}" min="50" max="200">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Typography -->
             <div class="card mb-4">
@@ -75,6 +158,11 @@
                     <div class="row">
                         <div class="col-md-6">
                             <h6>Font Sizes (pixels)</h6>
+                            
+                            <div class="mb-3">
+                                <label for="font_size_header" class="form-label">Header Font Size</label>
+                                <input type="number" class="form-control" id="font_size_header" name="font_size_header" value="{{ template.font_size_header if template else 14 }}" min="8" max="24">
+                            </div>
                             
                             <div class="mb-3">
                                 <label for="font_size_title" class="form-label">Title Font Size</label>
@@ -94,6 +182,16 @@
                             <div class="mb-3">
                                 <label for="font_size_date" class="form-label">Date Font Size</label>
                                 <input type="number" class="form-control" id="font_size_date" name="font_size_date" value="{{ template.font_size_date if template else 12 }}" min="8" max="24">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="font_size_footer" class="form-label">Footer Font Size</label>
+                                <input type="number" class="form-control" id="font_size_footer" name="font_size_footer" value="{{ template.font_size_footer if template else 12 }}" min="8" max="24">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="font_size_signature" class="form-label">Signature Font Size</label>
+                                <input type="number" class="form-control" id="font_size_signature" name="font_size_signature" value="{{ template.font_size_signature if template else 10 }}" min="6" max="20">
                             </div>
                         </div>
                         
@@ -123,6 +221,11 @@
                             <div class="mb-3">
                                 <label for="margin_footer" class="form-label">Footer Margin</label>
                                 <input type="number" class="form-control" id="margin_footer" name="margin_footer" value="{{ template.margin_footer if template else 450 }}" min="250" max="600">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="margin_signature" class="form-label">Signature Margin</label>
+                                <input type="number" class="form-control" id="margin_signature" name="margin_signature" value="{{ template.margin_signature if template else 500 }}" min="300" max="650">
                             </div>
                         </div>
                     </div>
@@ -174,14 +277,23 @@
             </div>
             <div class="card-body">
                 <div id="certificatePreview" class="border p-3" style="aspect-ratio: 8.5/11; background-color: white; position: relative; font-family: 'Helvetica', Arial, sans-serif;">
+                    <div id="previewCertNumber" style="position: absolute; right: 10px; top: 10px; font-size: 8px;">Cert No: CERT-20250920-12345</div>
+                    <div id="previewLogo" style="position: absolute; left: 10px; top: 10px; width: 40px; height: 20px; background: #eee; font-size: 6px; text-align: center; line-height: 20px;">[LOGO]</div>
+                    <div id="previewCompany" style="position: absolute; left: 50%; transform: translateX(-50%); top: 40px; text-align: center; width: 100%; font-size: 8px;"></div>
+                    <div id="previewHeader" style="position: absolute; left: 50%; transform: translateX(-50%); top: 55px; text-align: center; width: 100%; font-size: 9px; font-weight: bold;"></div>
                     <div id="previewTitle" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%;">Certificate of Completion</div>
                     <div id="previewSubtitle" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">This certifies that you have successfully completed:</div>
                     <div id="previewModule" style="position: absolute; left: 50%; transform: translateX(-50%); font-weight: bold; text-align: center; width: 100%;">Sample Module Name</div>
-                    <div id="previewDate" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">Date: September 18, 2025</div>
-                    <div id="previewFooter" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%; font-style: italic;"></div>
+                    <div id="previewDate" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;">Date: September 20, 2025</div>
+                    <div id="previewFooter" style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center; width: 100%;"></div>
+                    <div id="previewSignature" style="position: absolute; right: 20px; bottom: 50px; width: 60px; text-align: center;">
+                        <div style="border-bottom: 1px solid #000; height: 30px; font-size: 6px; line-height: 30px;">[SIGNATURE]</div>
+                        <div id="previewSigName" style="font-size: 6px; font-weight: bold; margin-top: 2px;"></div>
+                        <div id="previewSigTitle" style="font-size: 5px; margin-top: 1px;"></div>
+                    </div>
                 </div>
                 <div class="form-text mt-2">
-                    <small>Preview updates as you change the settings above. The actual certificate will be generated as a PDF with proper formatting.</small>
+                    <small>Preview updates as you change the settings above. The actual certificate will be generated as a PDF with proper formatting and includes a unique certificate number.</small>
                 </div>
             </div>
         </div>
@@ -212,21 +324,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function updatePreview() {
         const preview = document.getElementById('certificatePreview');
+        const company = document.getElementById('previewCompany');
+        const header = document.getElementById('previewHeader');
         const title = document.getElementById('previewTitle');
         const subtitle = document.getElementById('previewSubtitle');
         const module = document.getElementById('previewModule');
         const date = document.getElementById('previewDate');
         const footer = document.getElementById('previewFooter');
+        const sigName = document.getElementById('previewSigName');
+        const sigTitle = document.getElementById('previewSigTitle');
         
         // Get values
+        const companyText = document.getElementById('company_name').value;
+        const headerText = document.getElementById('header_text').value;
         const titleText = document.getElementById('title').value || 'Certificate of Completion';
         const subtitleText = document.getElementById('subtitle').value || 'This certifies that you have successfully completed:';
         const footerText = document.getElementById('footer_text').value;
+        const signatureNameText = document.getElementById('signature_name').value;
+        const signatureTitleText = document.getElementById('signature_title').value;
         
         const titleSize = document.getElementById('font_size_title').value || 28;
         const subtitleSize = document.getElementById('font_size_subtitle').value || 16;
         const moduleSize = document.getElementById('font_size_module').value || 22;
         const dateSize = document.getElementById('font_size_date').value || 12;
+        const headerSize = document.getElementById('font_size_header').value || 14;
+        const footerSize = document.getElementById('font_size_footer').value || 12;
         
         const titleMargin = document.getElementById('margin_top').value || 100;
         const subtitleMargin = document.getElementById('margin_subtitle').value || 200;
@@ -240,6 +362,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update preview
         preview.style.backgroundColor = bgColor;
         preview.style.color = textColor;
+        
+        // Company name
+        if (companyText) {
+            company.textContent = companyText;
+            company.style.display = 'block';
+        } else {
+            company.style.display = 'none';
+        }
+        
+        // Header text
+        if (headerText) {
+            header.textContent = headerText;
+            header.style.display = 'block';
+        } else {
+            header.style.display = 'none';
+        }
         
         title.textContent = titleText;
         title.style.fontSize = (titleSize * 0.3) + 'px';  // Scale down for preview
@@ -257,11 +395,24 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (footerText) {
             footer.textContent = footerText;
-            footer.style.fontSize = (dateSize * 0.3) + 'px';
+            footer.style.fontSize = (footerSize * 0.3) + 'px';
             footer.style.top = (footerMargin * 0.3) + 'px';
             footer.style.display = 'block';
         } else {
             footer.style.display = 'none';
+        }
+        
+        // Signature info
+        if (signatureNameText) {
+            sigName.textContent = signatureNameText;
+        } else {
+            sigName.textContent = '';
+        }
+        
+        if (signatureTitleText) {
+            sigTitle.textContent = signatureTitleText;
+        } else {
+            sigTitle.textContent = '';
         }
     }
 });

@@ -133,16 +133,30 @@ def init_database():
             name TEXT NOT NULL,
             title TEXT NOT NULL DEFAULT 'Certificate of Completion',
             subtitle TEXT DEFAULT 'This certifies that you have successfully completed:',
+            header_text TEXT DEFAULT '',
             footer_text TEXT DEFAULT '',
+            company_name TEXT DEFAULT '',
+            logo_url TEXT DEFAULT '',
+            signature_url TEXT DEFAULT '',
+            signature_name TEXT DEFAULT '',
+            signature_title TEXT DEFAULT '',
             font_size_title INTEGER DEFAULT 24,
             font_size_subtitle INTEGER DEFAULT 16,
             font_size_module INTEGER DEFAULT 20,
             font_size_date INTEGER DEFAULT 12,
+            font_size_header INTEGER DEFAULT 14,
+            font_size_footer INTEGER DEFAULT 10,
+            font_size_signature INTEGER DEFAULT 12,
             margin_top INTEGER DEFAULT 100,
             margin_subtitle INTEGER DEFAULT 200,
             margin_module INTEGER DEFAULT 250,
             margin_date INTEGER DEFAULT 350,
             margin_footer INTEGER DEFAULT 400,
+            margin_signature INTEGER DEFAULT 420,
+            logo_width INTEGER DEFAULT 100,
+            logo_height INTEGER DEFAULT 50,
+            signature_width INTEGER DEFAULT 150,
+            signature_height INTEGER DEFAULT 40,
             background_color TEXT DEFAULT '#ffffff',
             text_color TEXT DEFAULT '#000000',
             is_default INTEGER DEFAULT 0,
@@ -173,19 +187,27 @@ def create_default_certificate_template():
         template_id = str(uuid.uuid4())
         cursor.execute('''
             INSERT INTO certificate_templates (
-                id, name, title, subtitle, footer_text,
-                font_size_title, font_size_subtitle, font_size_module, font_size_date,
-                margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+                id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
+                font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
+                margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+                logo_width, logo_height, signature_width, signature_height,
                 background_color, text_color, is_default, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             template_id,
             'Default Certificate',
             'Certificate of Completion',
             'This certifies that you have successfully completed:',
-            'Congratulations on your achievement!',
-            24, 16, 20, 12,
-            100, 200, 250, 350, 400,
+            'Official Transcript', # Default header_text
+            'Congratulations on your achievement!', # Default footer_text
+            'Your Company', # Default company_name
+            '', # Default logo_url
+            '', # Default signature_url
+            '', # Default signature_name
+            '', # Default signature_title
+            24, 16, 20, 12, 14, 10, 12, # Font sizes
+            100, 200, 250, 350, 400, 420, # Margins
+            100, 50, 150, 40, # Logo and signature dimensions
             '#ffffff', '#000000',
             1,
             datetime.now().isoformat()
@@ -286,9 +308,10 @@ def get_certificate_templates():
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT id, name, title, subtitle, footer_text,
-               font_size_title, font_size_subtitle, font_size_module, font_size_date,
-               margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+        SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+               logo_width, logo_height, signature_width, signature_height,
                background_color, text_color, is_default, created_at
         FROM certificate_templates ORDER BY is_default DESC, name ASC
     ''')
@@ -300,20 +323,34 @@ def get_certificate_templates():
             'name': row[1],
             'title': row[2],
             'subtitle': row[3],
-            'footer_text': row[4],
-            'font_size_title': row[5],
-            'font_size_subtitle': row[6],
-            'font_size_module': row[7],
-            'font_size_date': row[8],
-            'margin_top': row[9],
-            'margin_subtitle': row[10],
-            'margin_module': row[11],
-            'margin_date': row[12],
-            'margin_footer': row[13],
-            'background_color': row[14],
-            'text_color': row[15],
-            'is_default': row[16],
-            'created_at': row[17]
+            'header_text': row[4],
+            'footer_text': row[5],
+            'company_name': row[6],
+            'logo_url': row[7],
+            'signature_url': row[8],
+            'signature_name': row[9],
+            'signature_title': row[10],
+            'font_size_title': row[11],
+            'font_size_subtitle': row[12],
+            'font_size_module': row[13],
+            'font_size_date': row[14],
+            'font_size_header': row[15],
+            'font_size_footer': row[16],
+            'font_size_signature': row[17],
+            'margin_top': row[18],
+            'margin_subtitle': row[19],
+            'margin_module': row[20],
+            'margin_date': row[21],
+            'margin_footer': row[22],
+            'margin_signature': row[23],
+            'logo_width': row[24],
+            'logo_height': row[25],
+            'signature_width': row[26],
+            'signature_height': row[27],
+            'background_color': row[28],
+            'text_color': row[29],
+            'is_default': row[30],
+            'created_at': row[31]
         }
         templates.append(template)
 
@@ -326,9 +363,10 @@ def get_certificate_template(template_id):
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT id, name, title, subtitle, footer_text,
-               font_size_title, font_size_subtitle, font_size_module, font_size_date,
-               margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+        SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+               logo_width, logo_height, signature_width, signature_height,
                background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE id = ?
     ''', (template_id,))
@@ -344,20 +382,34 @@ def get_certificate_template(template_id):
         'name': row[1],
         'title': row[2],
         'subtitle': row[3],
-        'footer_text': row[4],
-        'font_size_title': row[5],
-        'font_size_subtitle': row[6],
-        'font_size_module': row[7],
-        'font_size_date': row[8],
-        'margin_top': row[9],
-        'margin_subtitle': row[10],
-        'margin_module': row[11],
-        'margin_date': row[12],
-        'margin_footer': row[13],
-        'background_color': row[14],
-        'text_color': row[15],
-        'is_default': row[16],
-        'created_at': row[17]
+        'header_text': row[4],
+        'footer_text': row[5],
+        'company_name': row[6],
+        'logo_url': row[7],
+        'signature_url': row[8],
+        'signature_name': row[9],
+        'signature_title': row[10],
+        'font_size_title': row[11],
+        'font_size_subtitle': row[12],
+        'font_size_module': row[13],
+        'font_size_date': row[14],
+        'font_size_header': row[15],
+        'font_size_footer': row[16],
+        'font_size_signature': row[17],
+        'margin_top': row[18],
+        'margin_subtitle': row[19],
+        'margin_module': row[20],
+        'margin_date': row[21],
+        'margin_footer': row[22],
+        'margin_signature': row[23],
+        'logo_width': row[24],
+        'logo_height': row[25],
+        'signature_width': row[26],
+        'signature_height': row[27],
+        'background_color': row[28],
+        'text_color': row[29],
+        'is_default': row[30],
+        'created_at': row[31]
     }
 
 def get_default_certificate_template():
@@ -366,9 +418,10 @@ def get_default_certificate_template():
     cursor = conn.cursor()
 
     cursor.execute('''
-        SELECT id, name, title, subtitle, footer_text,
-               font_size_title, font_size_subtitle, font_size_module, font_size_date,
-               margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+        SELECT id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
+               font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
+               margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+               logo_width, logo_height, signature_width, signature_height,
                background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE is_default = 1 LIMIT 1
     ''')
@@ -384,20 +437,34 @@ def get_default_certificate_template():
         'name': row[1],
         'title': row[2],
         'subtitle': row[3],
-        'footer_text': row[4],
-        'font_size_title': row[5],
-        'font_size_subtitle': row[6],
-        'font_size_module': row[7],
-        'font_size_date': row[8],
-        'margin_top': row[9],
-        'margin_subtitle': row[10],
-        'margin_module': row[11],
-        'margin_date': row[12],
-        'margin_footer': row[13],
-        'background_color': row[14],
-        'text_color': row[15],
-        'is_default': row[16],
-        'created_at': row[17]
+        'header_text': row[4],
+        'footer_text': row[5],
+        'company_name': row[6],
+        'logo_url': row[7],
+        'signature_url': row[8],
+        'signature_name': row[9],
+        'signature_title': row[10],
+        'font_size_title': row[11],
+        'font_size_subtitle': row[12],
+        'font_size_module': row[13],
+        'font_size_date': row[14],
+        'font_size_header': row[15],
+        'font_size_footer': row[16],
+        'font_size_signature': row[17],
+        'margin_top': row[18],
+        'margin_subtitle': row[19],
+        'margin_module': row[20],
+        'margin_date': row[21],
+        'margin_footer': row[22],
+        'margin_signature': row[23],
+        'logo_width': row[24],
+        'logo_height': row[25],
+        'signature_width': row[26],
+        'signature_height': row[27],
+        'background_color': row[28],
+        'text_color': row[29],
+        'is_default': row[30],
+        'created_at': row[31]
     }
 
 def save_certificate_template(template_data):
@@ -413,25 +480,40 @@ def save_certificate_template(template_data):
         # Update existing template
         cursor.execute('''
             UPDATE certificate_templates SET
-                name = ?, title = ?, subtitle = ?, footer_text = ?,
-                font_size_title = ?, font_size_subtitle = ?, font_size_module = ?, font_size_date = ?,
-                margin_top = ?, margin_subtitle = ?, margin_module = ?, margin_date = ?, margin_footer = ?,
+                name = ?, title = ?, subtitle = ?, header_text = ?, footer_text = ?, company_name = ?, logo_url = ?, signature_url = ?, signature_name = ?, signature_title = ?,
+                font_size_title = ?, font_size_subtitle = ?, font_size_module = ?, font_size_date = ?, font_size_header = ?, font_size_footer = ?, font_size_signature = ?,
+                margin_top = ?, margin_subtitle = ?, margin_module = ?, margin_date = ?, margin_footer = ?, margin_signature = ?,
+                logo_width = ?, logo_height = ?, signature_width = ?, signature_height = ?,
                 background_color = ?, text_color = ?, is_default = ?
             WHERE id = ?
         ''', (
             template_data['name'],
             template_data['title'],
             template_data['subtitle'],
+            template_data.get('header_text', ''),
             template_data.get('footer_text', ''),
+            template_data.get('company_name', ''),
+            template_data.get('logo_url', ''),
+            template_data.get('signature_url', ''),
+            template_data.get('signature_name', ''),
+            template_data.get('signature_title', ''),
             template_data['font_size_title'],
             template_data['font_size_subtitle'],
             template_data['font_size_module'],
             template_data['font_size_date'],
+            template_data['font_size_header'],
+            template_data['font_size_footer'],
+            template_data['font_size_signature'],
             template_data['margin_top'],
             template_data['margin_subtitle'],
             template_data['margin_module'],
             template_data['margin_date'],
             template_data['margin_footer'],
+            template_data['margin_signature'],
+            template_data['logo_width'],
+            template_data['logo_height'],
+            template_data['signature_width'],
+            template_data['signature_height'],
             template_data['background_color'],
             template_data['text_color'],
             template_data.get('is_default', 0),
@@ -442,26 +524,41 @@ def save_certificate_template(template_data):
         template_id = str(uuid.uuid4())
         cursor.execute('''
             INSERT INTO certificate_templates (
-                id, name, title, subtitle, footer_text,
-                font_size_title, font_size_subtitle, font_size_module, font_size_date,
-                margin_top, margin_subtitle, margin_module, margin_date, margin_footer,
+                id, name, title, subtitle, header_text, footer_text, company_name, logo_url, signature_url, signature_name, signature_title,
+                font_size_title, font_size_subtitle, font_size_module, font_size_date, font_size_header, font_size_footer, font_size_signature,
+                margin_top, margin_subtitle, margin_module, margin_date, margin_footer, margin_signature,
+                logo_width, logo_height, signature_width, signature_height,
                 background_color, text_color, is_default, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             template_id,
             template_data['name'],
             template_data['title'],
             template_data['subtitle'],
+            template_data.get('header_text', ''),
             template_data.get('footer_text', ''),
+            template_data.get('company_name', ''),
+            template_data.get('logo_url', ''),
+            template_data.get('signature_url', ''),
+            template_data.get('signature_name', ''),
+            template_data.get('signature_title', ''),
             template_data['font_size_title'],
             template_data['font_size_subtitle'],
             template_data['font_size_module'],
             template_data['font_size_date'],
+            template_data['font_size_header'],
+            template_data['font_size_footer'],
+            template_data['font_size_signature'],
             template_data['margin_top'],
             template_data['margin_subtitle'],
             template_data['margin_module'],
             template_data['margin_date'],
             template_data['margin_footer'],
+            template_data['margin_signature'],
+            template_data['logo_width'],
+            template_data['logo_height'],
+            template_data['signature_width'],
+            template_data['signature_height'],
             template_data['background_color'],
             template_data['text_color'],
             template_data.get('is_default', 0),
@@ -1055,26 +1152,40 @@ def generate_certificate(module_id):
 
     # If no template exists, create a default one
     if not template:
-        default_template = {
-            'name': 'Default Template',
+        default_template_data = {
+            'name': 'Default Certificate',
             'title': 'Certificate of Completion',
             'subtitle': 'This certifies that you have successfully completed:',
+            'header_text': 'Official Transcript',
             'footer_text': 'Congratulations on your achievement!',
+            'company_name': 'Your Company',
+            'logo_url': '',
+            'signature_url': '',
+            'signature_name': '',
+            'signature_title': '',
             'font_size_title': 28,
             'font_size_subtitle': 16,
             'font_size_module': 22,
             'font_size_date': 12,
+            'font_size_header': 14,
+            'font_size_footer': 10,
+            'font_size_signature': 12,
             'margin_top': 100,
             'margin_subtitle': 200,
             'margin_module': 250,
             'margin_date': 350,
-            'margin_footer': 450,
+            'margin_footer': 400,
+            'margin_signature': 420,
+            'logo_width': 100,
+            'logo_height': 50,
+            'signature_width': 150,
+            'signature_height': 40,
             'background_color': '#FFFFFF',
             'text_color': '#000000',
             'is_default': 1
         }
-        save_certificate_template(default_template)
-        template = default_template
+        save_certificate_template(default_template_data)
+        template = default_template_data
 
     # Generate PDF certificate using template
     filename = f"certificate_{module_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -1099,31 +1210,92 @@ def generate_certificate(module_id):
     text_color = hex_to_rgb(template['text_color'])
     c.setFillColorRGB(*text_color)
 
+    # Add Company Logo
+    if template.get('logo_url'):
+        try:
+            logo_path = template['logo_url'].lstrip('/') # Assuming logo_url is relative to static folder
+            if not os.path.exists(logo_path): # If the URL path doesn't exist, try treating it as a file path directly
+                logo_path = os.path.join('static', template['logo_url'].lstrip('/'))
+            
+            if os.path.exists(logo_path):
+                c.drawInlineImage(logo_path, 
+                                  (width - template['logo_width']) / 2, 
+                                  height - template['margin_top'] - template['logo_height'],
+                                  width=template['logo_width'], 
+                                  height=template['logo_height'])
+            else:
+                print(f"Warning: Logo not found at {logo_path}")
+        except Exception as e:
+            print(f"Error drawing logo: {e}")
+
     # Certificate title
     c.setFont("Helvetica-Bold", template['font_size_title'])
     text = template['title']
-    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_top'], text)
+    title_y = height - template['margin_top'] - (template['logo_height'] if template.get('logo_url') else 0) - (template['font_size_title'] * 0.5) # Adjust y based on logo
+    c.drawCentredString(width / 2, title_y, text)
 
     # Certificate subtitle
     c.setFont("Helvetica", template['font_size_subtitle'])
     text = template['subtitle']
-    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_subtitle'], text)
+    subtitle_y = height - template['margin_subtitle']
+    c.drawCentredString(width / 2, subtitle_y, text)
 
     # Module name
     c.setFont("Helvetica-Bold", template['font_size_module'])
     text = module['title']
-    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_module'], text)
+    module_y = height - template['margin_module']
+    c.drawCentredString(width / 2, module_y, text)
 
     # Date
     c.setFont("Helvetica", template['font_size_date'])
     text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
-    c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_date'], text)
+    date_y = height - template['margin_date']
+    c.drawCentredString(width / 2, date_y, text)
+
+    # Header text (if provided)
+    if template.get('header_text'):
+        c.setFont("Helvetica-Bold", template['font_size_header'])
+        text = template['header_text']
+        header_y = height - template['margin_top'] / 2 # Position header above title
+        c.drawCentredString(width / 2, header_y, text)
 
     # Footer text (if provided)
     if template.get('footer_text'):
-        c.setFont("Helvetica-Oblique", template['font_size_date'])
+        c.setFont("Helvetica", template['font_size_footer'])
         text = template['footer_text']
-        c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_footer'], text)
+        footer_y = height - template['margin_footer']
+        c.drawCentredString(width / 2, footer_y, text)
+
+    # Signature
+    if template.get('signature_url'):
+        try:
+            sig_path = template['signature_url'].lstrip('/')
+            if not os.path.exists(sig_path):
+                sig_path = os.path.join('static', template['signature_url'].lstrip('/'))
+
+            if os.path.exists(sig_path):
+                # Position signature based on margin_signature
+                signature_base_y = height - template['margin_signature']
+                
+                # Draw the signature image
+                c.drawInlineImage(sig_path,
+                                  (width - template['signature_width']) / 2,
+                                  signature_base_y - template['signature_height'],
+                                  width=template['signature_width'],
+                                  height=template['signature_height'])
+                
+                # Draw signature name and title below the signature image
+                c.setFont("Helvetica-Bold", template['font_size_signature'])
+                name_y = signature_base_y - template['signature_height'] - 15 # Position below image
+                c.drawCentredString(width / 2, name_y, template['signature_name'])
+
+                c.setFont("Helvetica", template['font_size_signature'] - 1) # Slightly smaller for title
+                title_y = name_y - 15 # Position below name
+                c.drawCentredString(width / 2, title_y, template['signature_title'])
+            else:
+                print(f"Warning: Signature not found at {sig_path}")
+        except Exception as e:
+            print(f"Error drawing signature: {e}")
 
     c.save()
 
@@ -1597,16 +1769,30 @@ def admin_new_certificate_template():
             'name': request.form.get('name'),
             'title': request.form.get('title'),
             'subtitle': request.form.get('subtitle'),
+            'header_text': request.form.get('header_text', ''),
             'footer_text': request.form.get('footer_text', ''),
-            'font_size_title': int(request.form.get('font_size_title', 28)),
+            'company_name': request.form.get('company_name', ''),
+            'logo_url': request.form.get('logo_url', ''),
+            'signature_url': request.form.get('signature_url', ''),
+            'signature_name': request.form.get('signature_name', ''),
+            'signature_title': request.form.get('signature_title', ''),
+            'font_size_title': int(request.form.get('font_size_title', 24)),
             'font_size_subtitle': int(request.form.get('font_size_subtitle', 16)),
-            'font_size_module': int(request.form.get('font_size_module', 22)),
+            'font_size_module': int(request.form.get('font_size_module', 20)),
             'font_size_date': int(request.form.get('font_size_date', 12)),
+            'font_size_header': int(request.form.get('font_size_header', 14)),
+            'font_size_footer': int(request.form.get('font_size_footer', 10)),
+            'font_size_signature': int(request.form.get('font_size_signature', 12)),
             'margin_top': int(request.form.get('margin_top', 100)),
             'margin_subtitle': int(request.form.get('margin_subtitle', 200)),
             'margin_module': int(request.form.get('margin_module', 250)),
             'margin_date': int(request.form.get('margin_date', 350)),
-            'margin_footer': int(request.form.get('margin_footer', 450)),
+            'margin_footer': int(request.form.get('margin_footer', 400)),
+            'margin_signature': int(request.form.get('margin_signature', 420)),
+            'logo_width': int(request.form.get('logo_width', 100)),
+            'logo_height': int(request.form.get('logo_height', 50)),
+            'signature_width': int(request.form.get('signature_width', 150)),
+            'signature_height': int(request.form.get('signature_height', 40)),
             'background_color': request.form.get('background_color', '#FFFFFF'),
             'text_color': request.form.get('text_color', '#000000'),
             'is_default': bool(request.form.get('is_default'))
@@ -1645,16 +1831,30 @@ def admin_edit_certificate_template(template_id):
             'name': request.form.get('name'),
             'title': request.form.get('title'),
             'subtitle': request.form.get('subtitle'),
+            'header_text': request.form.get('header_text', ''),
             'footer_text': request.form.get('footer_text', ''),
-            'font_size_title': int(request.form.get('font_size_title', 28)),
+            'company_name': request.form.get('company_name', ''),
+            'logo_url': request.form.get('logo_url', ''),
+            'signature_url': request.form.get('signature_url', ''),
+            'signature_name': request.form.get('signature_name', ''),
+            'signature_title': request.form.get('signature_title', ''),
+            'font_size_title': int(request.form.get('font_size_title', 24)),
             'font_size_subtitle': int(request.form.get('font_size_subtitle', 16)),
-            'font_size_module': int(request.form.get('font_size_module', 22)),
+            'font_size_module': int(request.form.get('font_size_module', 20)),
             'font_size_date': int(request.form.get('font_size_date', 12)),
+            'font_size_header': int(request.form.get('font_size_header', 14)),
+            'font_size_footer': int(request.form.get('font_size_footer', 10)),
+            'font_size_signature': int(request.form.get('font_size_signature', 12)),
             'margin_top': int(request.form.get('margin_top', 100)),
             'margin_subtitle': int(request.form.get('margin_subtitle', 200)),
             'margin_module': int(request.form.get('margin_module', 250)),
             'margin_date': int(request.form.get('margin_date', 350)),
-            'margin_footer': int(request.form.get('margin_footer', 450)),
+            'margin_footer': int(request.form.get('margin_footer', 400)),
+            'margin_signature': int(request.form.get('margin_signature', 420)),
+            'logo_width': int(request.form.get('logo_width', 100)),
+            'logo_height': int(request.form.get('logo_height', 50)),
+            'signature_width': int(request.form.get('signature_width', 150)),
+            'signature_height': int(request.form.get('signature_height', 40)),
             'background_color': request.form.get('background_color', '#FFFFFF'),
             'text_color': request.form.get('text_color', '#000000'),
             'is_default': bool(request.form.get('is_default'))
