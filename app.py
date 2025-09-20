@@ -654,36 +654,46 @@ def delete_certificate_template(template_id):
 # Load courses data from SQLite
 def load_courses():
     """Load courses from SQLite database"""
-    conn = sqlite3.connect('data/tutorial_platform.db')
-    cursor = conn.cursor()
+    try:
+        conn = sqlite3.connect('data/tutorial_platform.db')
+        cursor = conn.cursor()
 
-    cursor.execute('''
-        SELECT id, title, description, video_url, created_at, order_num, quiz_data
-        FROM modules ORDER BY order_num, created_at
-    ''')
+        cursor.execute('''
+            SELECT id, title, description, video_url, created_at, order_num, quiz_data
+            FROM modules ORDER BY order_num, created_at
+        ''')
 
-    modules = []
-    for row in cursor.fetchall():
-        module = {
-            'id': row[0],
-            'title': row[1],
-            'description': row[2] or '',
-            'video_url': row[3] or '',
-            'created_at': row[4],
-            'order': row[5]
-        }
+        modules = []
+        rows = cursor.fetchall()
+        print(f"Database query returned {len(rows)} modules")
+        
+        for row in rows:
+            module = {
+                'id': row[0],
+                'title': row[1],
+                'description': row[2] or '',
+                'video_url': row[3] or '',
+                'created_at': row[4],
+                'order': row[5]
+            }
 
-        # Parse quiz data if it exists
-        if row[6]:
-            try:
-                module['quiz'] = json.loads(row[6])
-            except json.JSONDecodeError:
-                pass
+            # Parse quiz data if it exists
+            if row[6]:
+                try:
+                    module['quiz'] = json.loads(row[6])
+                except json.JSONDecodeError:
+                    print(f"Warning: Invalid quiz data for module {module['id']}")
 
-        modules.append(module)
+            modules.append(module)
 
-    conn.close()
-    return {"modules": modules}
+        conn.close()
+        print(f"Successfully loaded {len(modules)} modules from database")
+        return {"modules": modules}
+        
+    except Exception as e:
+        print(f"Error loading courses from database: {e}")
+        # Return empty structure if database error
+        return {"modules": []}
 
 def save_courses(data):
     """Save courses to SQLite database - safer update approach"""
@@ -1685,6 +1695,13 @@ def admin_logout():
 def admin_dashboard():
     courses_data = load_courses()
     config = load_config()
+    
+    # Debug: Print module count to console
+    module_count = len(courses_data.get('modules', []))
+    print(f"Admin dashboard: Loading {module_count} modules")
+    for module in courses_data.get('modules', []):
+        print(f"Module: {module.get('id', 'no-id')} - {module.get('title', 'no-title')}")
+    
     return render_template('admin/dashboard.html',
                          courses=courses_data,
                          config=config)

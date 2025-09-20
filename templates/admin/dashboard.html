@@ -28,7 +28,7 @@
                 <a href="{{ url_for('admin_new_module') }}" class="btn btn-primary">Add New Module</a>
             </div>
             
-            {% if courses.modules %}
+            {% if courses and courses.modules %}
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -43,7 +43,7 @@
                             {% for module in courses.modules %}
                                 <tr data-module-id="{{ module.id }}">
                                     <td>{{ module.title }}</td>
-                                    <td>{{ module.description[:50] }}{% if module.description|length > 50 %}...{% endif %}</td>
+                                    <td>{{ (module.description[:50] + '...') if module.description and module.description|length > 50 else (module.description or '') }}</td>
                                     <td>{{ module.created_at[:10] if module.created_at else 'N/A' }}</td>
                                     <td>
                                         <a href="{{ url_for('admin_edit_module', module_id=module.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -56,7 +56,7 @@
                 </div>
             {% else %}
                 <div class="alert alert-info">
-                    <p>No modules created yet.</p>
+                    <p>No modules created yet. <a href="{{ url_for('admin_new_module') }}">Create your first module</a></p>
                 </div>
             {% endif %}
         </div>
