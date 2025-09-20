@@ -14,7 +14,7 @@ import trafilatura
 import bleach
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file, make_response
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, send_file, make_response, after_this_request
 from markupsafe import Markup
 from werkzeug.utils import secure_filename
 
@@ -55,7 +55,7 @@ def sanitize_html(content):
     """Sanitize HTML content to prevent XSS while allowing safe formatting"""
     if not content:
         return ""
-    
+
     # First clean with bleach
     cleaned_content = bleach.clean(
         content,
@@ -64,18 +64,18 @@ def sanitize_html(content):
         protocols=ALLOWED_PROTOCOLS,
         strip=True
     )
-    
+
     # Add rel="noopener noreferrer" to external links for security
     def add_rel_attributes(attrs, new=False):
         attrs[None, 'rel'] = 'noopener noreferrer'
         return attrs
-    
+
     cleaned_content = bleach.linkify(
         cleaned_content,
         parse_email=True,
         callbacks=[add_rel_attributes]
     )
-    
+
     return cleaned_content
 
 # Database initialization
@@ -84,7 +84,7 @@ def init_database():
     os.makedirs('data', exist_ok=True)
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     # Create modules table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS modules (
@@ -97,7 +97,7 @@ def init_database():
             quiz_data TEXT
         )
     ''')
-    
+
     # Create module_content table for storing HTML content
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS module_content (
@@ -108,7 +108,7 @@ def init_database():
             FOREIGN KEY (module_id) REFERENCES modules (id) ON DELETE CASCADE
         )
     ''')
-    
+
     # Create progress table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS progress (
@@ -116,7 +116,7 @@ def init_database():
             data TEXT NOT NULL
         )
     ''')
-    
+
     # Create site configuration table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS site_config (
@@ -125,7 +125,7 @@ def init_database():
             data_type TEXT DEFAULT 'string'
         )
     ''')
-    
+
     # Create certificate templates table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS certificate_templates (
@@ -149,7 +149,7 @@ def init_database():
             created_at TEXT NOT NULL
         )
     ''')
-    
+
     conn.commit()
     conn.close()
 
@@ -164,12 +164,12 @@ def create_default_certificate_template():
     """Create default certificate template if none exists"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     # Check if default template exists
     cursor.execute('SELECT COUNT(*) FROM certificate_templates WHERE is_default = 1')
     if cursor.fetchone()[0] == 0:
         print("Creating default certificate template...")
-        
+
         template_id = str(uuid.uuid4())
         cursor.execute('''
             INSERT INTO certificate_templates (
@@ -190,9 +190,9 @@ def create_default_certificate_template():
             1,
             datetime.now().isoformat()
         ))
-        
+
         print("Default certificate template created")
-    
+
     conn.commit()
     conn.close()
 
@@ -205,11 +205,11 @@ def load_config():
     """Load configuration from SQLite database"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     cursor.execute('SELECT key, value, data_type FROM site_config')
     config_rows = cursor.fetchall()
     conn.close()
-    
+
     if not config_rows:
         # Return default configuration if none exists
         return {
@@ -230,7 +230,7 @@ def load_config():
                 "custom_emoji": "✨"
             }
         }
-    
+
     # Reconstruct nested configuration from flattened database format
     config = {}
     for key, value, data_type in config_rows:
@@ -241,7 +241,7 @@ def load_config():
                 parsed_value = value
         else:
             parsed_value = value
-            
+
         # Handle nested keys (e.g., "header_customization.title_color")
         keys = key.split('.')
         current = config
@@ -250,17 +250,17 @@ def load_config():
                 current[k] = {}
             current = current[k]
         current[keys[-1]] = parsed_value
-    
+
     return config
 
 def save_config(config):
     """Save configuration to SQLite database"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     # Clear existing configuration
     cursor.execute('DELETE FROM site_config')
-    
+
     # Flatten configuration and insert into database
     def insert_config_recursive(prefix, data):
         for key, value in data.items():
@@ -273,9 +273,9 @@ def save_config(config):
                     (full_key, json.dumps(value) if not isinstance(value, str) else value, 
                      'json' if not isinstance(value, str) else 'string')
                 )
-    
+
     insert_config_recursive('', config)
-    
+
     conn.commit()
     conn.close()
 
@@ -284,7 +284,7 @@ def get_certificate_templates():
     """Get all certificate templates from database"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         SELECT id, name, title, subtitle, footer_text,
                font_size_title, font_size_subtitle, font_size_module, font_size_date,
@@ -292,7 +292,7 @@ def get_certificate_templates():
                background_color, text_color, is_default, created_at
         FROM certificate_templates ORDER BY is_default DESC, name ASC
     ''')
-    
+
     templates = []
     for row in cursor.fetchall():
         template = {
@@ -316,7 +316,7 @@ def get_certificate_templates():
             'created_at': row[17]
         }
         templates.append(template)
-    
+
     conn.close()
     return templates
 
@@ -324,7 +324,7 @@ def get_certificate_template(template_id):
     """Get a specific certificate template by ID"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         SELECT id, name, title, subtitle, footer_text,
                font_size_title, font_size_subtitle, font_size_module, font_size_date,
@@ -332,13 +332,13 @@ def get_certificate_template(template_id):
                background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE id = ?
     ''', (template_id,))
-    
+
     row = cursor.fetchone()
     conn.close()
-    
+
     if not row:
         return None
-        
+
     return {
         'id': row[0],
         'name': row[1],
@@ -364,7 +364,7 @@ def get_default_certificate_template():
     """Get the default certificate template"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         SELECT id, name, title, subtitle, footer_text,
                font_size_title, font_size_subtitle, font_size_module, font_size_date,
@@ -372,13 +372,13 @@ def get_default_certificate_template():
                background_color, text_color, is_default, created_at
         FROM certificate_templates WHERE is_default = 1 LIMIT 1
     ''')
-    
+
     row = cursor.fetchone()
     conn.close()
-    
+
     if not row:
         return None
-        
+
     return {
         'id': row[0],
         'name': row[1],
@@ -404,11 +404,11 @@ def save_certificate_template(template_data):
     """Save or update a certificate template"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     # If this is set as default, unset all other defaults
     if template_data.get('is_default'):
         cursor.execute('UPDATE certificate_templates SET is_default = 0')
-    
+
     if template_data.get('id'):
         # Update existing template
         cursor.execute('''
@@ -468,7 +468,7 @@ def save_certificate_template(template_data):
             datetime.now().isoformat()
         ))
         template_data['id'] = template_id
-    
+
     conn.commit()
     conn.close()
     return template_data['id']
@@ -477,17 +477,17 @@ def delete_certificate_template(template_id):
     """Delete a certificate template"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     # Don't allow deleting the default template
     cursor.execute('SELECT is_default FROM certificate_templates WHERE id = ?', (template_id,))
     result = cursor.fetchone()
-    
+
     if result and result[0] == 1:
         conn.close()
         return False, "Cannot delete the default template"
-    
+
     cursor.execute('DELETE FROM certificate_templates WHERE id = ?', (template_id,))
-    
+
     conn.commit()
     conn.close()
     return True, "Template deleted successfully"
@@ -497,12 +497,12 @@ def load_courses():
     """Load courses from SQLite database"""
     conn = sqlite3.connect('data/tutorial_platform.db')
     cursor = conn.cursor()
-    
+
     cursor.execute('''
         SELECT id, title, description, video_url, created_at, order_num, quiz_data 
         FROM modules ORDER BY order_num, created_at
     ''')
-    
+
     modules = []
     for row in cursor.fetchall():
         module = {
@@ -513,16 +513,16 @@ def load_courses():
             'created_at': row[4],
             'order': row[5]
         }
-        
+
         # Parse quiz data if it exists
         if row[6]:
             try:
                 module['quiz'] = json.loads(row[6])
             except json.JSONDecodeError:
                 pass
-        
+
         modules.append(module)
-    
+
     conn.close()
     return {"modules": modules}
 
@@ -531,24 +531,24 @@ def save_courses(data):
     conn = sqlite3.connect('data/tutorial_platform.db')
     conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
     cursor = conn.cursor()
-    
+
     # Get existing module IDs
     cursor.execute('SELECT id FROM modules')
     existing_ids = set(row[0] for row in cursor.fetchall())
-    
+
     # Get new module IDs
     new_ids = set(module['id'] for module in data.get('modules', []))
-    
+
     # Delete modules that are no longer present
     for module_id in existing_ids - new_ids:
         cursor.execute('DELETE FROM modules WHERE id = ?', (module_id,))
-    
+
     # Update or insert modules
     for module in data.get('modules', []):
         quiz_data = None
         if 'quiz' in module:
             quiz_data = json.dumps(module['quiz'])
-            
+
         cursor.execute('''
             INSERT OR REPLACE INTO modules (id, title, description, video_url, created_at, order_num, quiz_data)
             VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -561,7 +561,7 @@ def save_courses(data):
             module.get('order', 0),
             quiz_data
         ))
-    
+
     conn.commit()
     conn.close()
 
@@ -570,11 +570,11 @@ def update_module_in_db(module):
     conn = sqlite3.connect('data/tutorial_platform.db')
     conn.execute('PRAGMA foreign_keys=ON')
     cursor = conn.cursor()
-    
+
     quiz_data = None
     if 'quiz' in module:
         quiz_data = json.dumps(module['quiz'])
-        
+
     cursor.execute('''
         INSERT OR REPLACE INTO modules (id, title, description, video_url, created_at, order_num, quiz_data)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -587,7 +587,7 @@ def update_module_in_db(module):
         module.get('order', 0),
         quiz_data
     ))
-    
+
     conn.commit()
     conn.close()
 
@@ -598,18 +598,18 @@ def save_module_content(module_id, content):
         conn = sqlite3.connect('data/tutorial_platform.db')
         conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
         cursor = conn.cursor()
-        
+
         # Check if the table has timestamp columns
         cursor.execute("PRAGMA table_info(module_content)")
         columns = [column[1] for column in cursor.fetchall()]
         has_timestamps = 'created_at' in columns and 'updated_at' in columns
-        
+
         # Check if content already exists
         cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
         existing = cursor.fetchone()
-        
+
         current_time = datetime.now().isoformat()
-        
+
         if existing:
             # Update existing content
             if has_timestamps:
@@ -636,7 +636,7 @@ def save_module_content(module_id, content):
                     INSERT INTO module_content (module_id, content)
                     VALUES (?, ?)
                 ''', (module_id, content))
-        
+
         conn.commit()
     finally:
         if conn:
@@ -649,28 +649,28 @@ def load_module_content(module_id):
         conn = sqlite3.connect('data/tutorial_platform.db')
         conn.execute('PRAGMA foreign_keys=ON')  # Enable foreign key constraints
         cursor = conn.cursor()
-        
+
         cursor.execute('SELECT content FROM module_content WHERE module_id = ?', (module_id,))
         result = cursor.fetchone()
-        
+
         if result:
             return result[0]
-        
+
         # Check for legacy HTML file and migrate it
         legacy_file_path = f'data/modules/{module_id}.html'
         if os.path.exists(legacy_file_path):
             try:
                 with open(legacy_file_path, 'r', encoding='utf-8') as f:
                     legacy_content = f.read()
-                    
+
                 # Save legacy content to database
                 save_module_content(module_id, legacy_content)
-                
+
                 # Return the migrated content
                 return legacy_content
             except Exception as e:
                 print(f"Error migrating legacy content for module {module_id}: {e}")
-        
+
         return None
     finally:
         if conn:
@@ -721,17 +721,17 @@ def is_safe_url(url):
     """Validate URL to prevent SSRF attacks with comprehensive IPv4/IPv6 checking"""
     try:
         parsed = urlparse(url)
-        
+
         # Only allow HTTP and HTTPS schemes
         if parsed.scheme not in ['http', 'https']:
             return False, 'Only HTTP and HTTPS schemes are allowed'
-        
+
         # Ensure hostname is present
         if not parsed.hostname:
             return False, 'Invalid hostname'
-        
+
         hostname = parsed.hostname.lower()
-        
+
         # Block IP literals in URLs (both IPv4 and IPv6)
         try:
             ip_literal = ipaddress.ip_address(hostname)
@@ -739,7 +739,7 @@ def is_safe_url(url):
         except ValueError:
             # Not an IP literal, continue with hostname validation
             pass
-        
+
         # Block localhost and other dangerous hostnames
         dangerous_hostnames = [
             'localhost', '127.0.0.1', '::1',
@@ -748,34 +748,34 @@ def is_safe_url(url):
             '100.100.100.200',  # Alibaba metadata
             '192.0.0.192',      # Oracle metadata
         ]
-        
+
         if hostname in dangerous_hostnames:
             return False, f'Hostname "{hostname}" is not allowed'
-        
+
         # Resolve hostname to ALL IP addresses (both IPv4 and IPv6)
         try:
             # Get all address info for both IPv4 and IPv6
             addr_info = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
             resolved_ips = [info[4][0] for info in addr_info]
-            
+
             if not resolved_ips:
                 return False, 'Could not resolve hostname'
         except (socket.gaierror, ValueError):
             return False, 'Could not resolve hostname'
-        
+
         # Validate ALL resolved IP addresses
         for ip_str in resolved_ips:
             try:
                 ip_obj = ipaddress.ip_address(ip_str)
-                
+
                 # Block private IP ranges (both IPv4 and IPv6)
                 if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
                     return False, f'Private, loopback, and link-local IPs are not allowed (resolved: {ip_str})'
-                
+
                 # Block reserved IP ranges
                 if ip_obj.is_reserved or ip_obj.is_multicast:
                     return False, f'Reserved and multicast IPs are not allowed (resolved: {ip_str})'
-                
+
                 # Block cloud metadata endpoints and other dangerous IPs
                 dangerous_ips = [
                     '169.254.169.254',  # AWS/GCP metadata
@@ -784,30 +784,30 @@ def is_safe_url(url):
                     '::1',              # IPv6 localhost
                     'fd00:ec2::254',    # AWS IPv6 metadata
                 ]
-                
+
                 if str(ip_obj) in dangerous_ips:
                     return False, f'Access to dangerous IP {ip_obj} is not allowed'
-                
+
                 # Additional IPv6 checks
                 if ip_obj.version == 6:
                     # Block unique local addresses (fc00::/7)
                     if ipaddress.IPv6Address(ip_str) in ipaddress.IPv6Network('fc00::/7'):
                         return False, f'IPv6 unique local addresses are not allowed (resolved: {ip_str})'
-                    
+
                     # Block site-local addresses (fec0::/10) - deprecated but still blocked
                     if ipaddress.IPv6Address(ip_str) in ipaddress.IPv6Network('fec0::/10'):
                         return False, f'IPv6 site-local addresses are not allowed (resolved: {ip_str})'
-                        
+
             except ValueError:
                 return False, f'Invalid IP address resolved: {ip_str}'
-        
+
         # Block common internal service ports
         dangerous_ports = [22, 23, 25, 53, 135, 139, 445, 993, 995, 1433, 3306, 3389, 5432, 5984, 6379, 8080, 9200, 27017]
         if parsed.port and parsed.port in dangerous_ports:
             return False, f'Access to port {parsed.port} is not allowed'
-        
+
         return True, 'URL is safe'
-        
+
     except Exception as e:
         return False, f'URL validation error: {str(e)}'
 
@@ -817,18 +817,18 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
         visited_urls = set()
         redirect_count = 0
         current_url = url
-        
+
         while redirect_count <= max_redirects:
             # Check for redirect loops
             if current_url in visited_urls:
                 raise ValueError('Redirect loop detected')
             visited_urls.add(current_url)
-            
+
             # Validate current URL
             is_safe, message = is_safe_url(current_url)
             if not is_safe:
                 raise ValueError(f'Unsafe URL: {message}')
-            
+
             # Make request with security headers and NO automatic redirects
             headers = {
                 'User-Agent': 'Tutorial-Platform-Scraper/1.0',
@@ -837,7 +837,7 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
                 'DNT': '1',
                 'Connection': 'close'
             }
-            
+
             response = requests.get(
                 current_url,
                 headers=headers,
@@ -846,16 +846,16 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
                 stream=True,
                 verify=True
             )
-            
+
             # Handle redirects manually
             if response.status_code in [301, 302, 303, 307, 308]:
                 if redirect_count >= max_redirects:
                     raise ValueError(f'Too many redirects (max: {max_redirects})')
-                
+
                 location = response.headers.get('Location')
                 if not location:
                     raise ValueError('Redirect response missing Location header')
-                
+
                 # Resolve relative URLs
                 if location.startswith('/'):
                     from urllib.parse import urljoin
@@ -865,35 +865,35 @@ def secure_fetch_url(url, timeout=10, max_size=5*1024*1024, max_redirects=3):
                     current_url = urljoin(current_url, location)
                 else:
                     current_url = location
-                
+
                 # CRITICAL: Re-validate redirect target for SSRF protection
                 is_safe, safety_message = is_safe_url(current_url)
                 if not is_safe:
                     raise ValueError(f'Redirect to unsafe URL blocked: {safety_message}')
-                
+
                 redirect_count += 1
                 continue
-            
+
             # Not a redirect, process the response
             response.raise_for_status()
-            
+
             # Check response size before reading content
             content_length = response.headers.get('content-length')
             if content_length and int(content_length) > max_size:
                 raise ValueError(f'Content too large: {content_length} bytes (max: {max_size})')
-            
+
             # Read content with size limit
             content = b''
             for chunk in response.iter_content(chunk_size=8192):
                 content += chunk
                 if len(content) > max_size:
                     raise ValueError(f'Content too large (max: {max_size} bytes)')
-            
+
             # Return the final content
             return content.decode('utf-8', errors='replace')
-        
+
         raise ValueError(f'Too many redirects (max: {max_redirects})')
-        
+
     except requests.exceptions.Timeout:
         raise ValueError('Request timeout')
     except requests.exceptions.SSLError:
@@ -927,23 +927,23 @@ def index():
 def module_detail(module_id):
     courses_data = load_courses()
     module = None
-    
+
     for m in courses_data.get('modules', []):
         if m['id'] == module_id:
             module = m
             break
-    
+
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('index'))
-    
+
     # Load module content from database and sanitize it
     raw_content = load_module_content(module_id)
     if raw_content:
         module['content'] = Markup(sanitize_html(raw_content))
     else:
         module['content'] = Markup("<p>No content available for this module.</p>")
-    
+
     config = load_config()
     response = make_response(render_template('module.html', 
                                            module=module,
@@ -958,16 +958,16 @@ def module_detail(module_id):
 def quiz(module_id):
     courses_data = load_courses()
     module = None
-    
+
     for m in courses_data.get('modules', []):
         if m['id'] == module_id:
             module = m
             break
-    
+
     if not module or not module.get('quiz'):
         flash('Quiz not found', 'error')
         return redirect(url_for('index'))
-    
+
     config = load_config()
     return render_template('quiz.html', 
                          module=module,
@@ -978,39 +978,39 @@ def quiz_submit():
     # CSRF protection for quiz submissions
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
-        
+
     module_id = data.get('module_id')
     answers = data.get('answers', {})
-    
+
     courses_data = load_courses()
     module = None
-    
+
     for m in courses_data.get('modules', []):
         if m['id'] == module_id:
             module = m
             break
-    
+
     if not module or not module.get('quiz'):
         return jsonify({'error': 'Quiz not found'}), 404
-    
+
     # Calculate score
     total_questions = len(module['quiz'].get('questions', []))
     correct_answers = 0
-    
+
     for i, question in enumerate(module['quiz'].get('questions', [])):
         user_answer = answers.get(str(i))
         correct_answer = question.get('correct_answer')
-        
+
         if user_answer == correct_answer:
             correct_answers += 1
-    
+
     score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
     passed = score >= module['quiz'].get('passing_score', 70)
-    
+
     return jsonify({
         'score': score,
         'correct': correct_answers,
@@ -1040,19 +1040,19 @@ def after_request(response):
 def generate_certificate(module_id):
     courses_data = load_courses()
     module = None
-    
+
     for m in courses_data.get('modules', []):
         if m['id'] == module_id:
             module = m
             break
-    
+
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('index'))
-    
+
     # Get certificate template
     template = get_default_certificate_template()
-    
+
     # If no template exists, create a default one
     if not template:
         default_template = {
@@ -1075,101 +1075,114 @@ def generate_certificate(module_id):
         }
         save_certificate_template(default_template)
         template = default_template
-    
+
     # Generate PDF certificate using template
     filename = f"certificate_{module_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
     filepath = f"static/resources/{filename}"
-    
+
     c = canvas.Canvas(filepath, pagesize=letter)
     width, height = letter
-    
+
     # Parse colors (hex to RGB)
     def hex_to_rgb(hex_color):
         hex_color = hex_color.lstrip('#')
         if len(hex_color) == 6:
             return tuple(int(hex_color[i:i+2], 16) / 255.0 for i in (0, 2, 4))
         return (0, 0, 0)
-    
+
     # Set background color
     bg_color = hex_to_rgb(template['background_color'])
     c.setFillColorRGB(*bg_color)
     c.rect(0, 0, width, height, fill=True, stroke=False)
-    
+
     # Set text color
     text_color = hex_to_rgb(template['text_color'])
     c.setFillColorRGB(*text_color)
-    
+
     # Certificate title
     c.setFont("Helvetica-Bold", template['font_size_title'])
     text = template['title']
     c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_top'], text)
-    
+
     # Certificate subtitle
     c.setFont("Helvetica", template['font_size_subtitle'])
     text = template['subtitle']
     c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_subtitle'], text)
-    
+
     # Module name
     c.setFont("Helvetica-Bold", template['font_size_module'])
     text = module['title']
     c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_module'], text)
-    
+
     # Date
     c.setFont("Helvetica", template['font_size_date'])
     text = f"Date: {datetime.now().strftime('%B %d, %Y')}"
     c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_date'], text)
-    
+
     # Footer text (if provided)
     if template.get('footer_text'):
         c.setFont("Helvetica-Oblique", template['font_size_date'])
         text = template['footer_text']
         c.drawString((width - c.stringWidth(text)) / 2, height - template['margin_footer'], text)
-    
+
     c.save()
-    
-    return send_file(filepath, as_attachment=True, download_name=filename)
+
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(filepath)
+        except OSError:
+            pass
+        return response
+
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/pdf'
+    )
 
 @app.route('/api/scrape-url', methods=['POST'])
 @require_admin
 def scrape_url():
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
-        
+
     url = data.get('url')
-    
+
     if not url:
         return jsonify({'error': 'URL is required'}), 400
-    
+
     # Validate and sanitize URL
     url = str(url).strip()
     if len(url) > 2048:  # Reasonable URL length limit
         return jsonify({'error': 'URL too long'}), 400
-    
+
     try:
         # Securely fetch URL content
         html_content = secure_fetch_url(url, timeout=10, max_size=5*1024*1024)
-        
+
         # Extract text content using trafilatura
         text = trafilatura.extract(html_content)
-        
+
         if not text:
             return jsonify({'error': 'Could not extract content from URL'}), 400
-        
+
         # Limit extracted text size
         if len(text) > 50000:  # 50KB text limit
             text = text[:50000] + '... [truncated]'
-        
+
         # Generate quiz questions using OpenAI if available
         quiz_questions = []
         if openai_client:
             try:
                 # Limit content sent to OpenAI
                 content_for_ai = text[:2000] if len(text) > 2000 else text
-                
+
                 response = openai_client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
@@ -1181,7 +1194,7 @@ def scrape_url():
                     ],
                     response_format={"type": "json_object"}
                 )
-                
+
                 ai_content = response.choices[0].message.content
                 if ai_content:
                     quiz_data = json.loads(ai_content)
@@ -1191,12 +1204,12 @@ def scrape_url():
             except Exception as e:
                 print(f"Error generating quiz questions: {e}")
                 # Don't fail the entire request if AI generation fails
-        
+
         return jsonify({
             'content': text,
             'quiz_questions': quiz_questions
         })
-        
+
     except ValueError as e:
         # These are our custom validation errors
         return jsonify({'error': str(e)}), 400
@@ -1212,10 +1225,10 @@ def admin_login():
         if not validate_csrf_token():
             flash('Invalid CSRF token', 'error')
             return redirect(url_for('admin_login'))
-            
+
         passcode = request.form.get('passcode')
         config = load_config()
-        
+
         if passcode == config.get('admin_passcode', 'admin123'):
             session['admin_authenticated'] = True
             session.permanent = True
@@ -1223,7 +1236,7 @@ def admin_login():
             return redirect(url_for('admin_dashboard'))
         else:
             flash('Invalid passcode', 'error')
-    
+
     config = load_config()
     return render_template('admin/login.html', config=config)
 
@@ -1232,7 +1245,7 @@ def admin_logout():
     if not validate_csrf_token():
         flash('Invalid CSRF token', 'error')
         return redirect(url_for('admin_dashboard'))
-    
+
     session.pop('admin_authenticated', None)
     session.pop('csrf_token', None)
     return redirect(url_for('index'))
@@ -1253,19 +1266,19 @@ def admin_new_module():
         if not validate_csrf_token():
             flash('Invalid CSRF token', 'error')
             return redirect(url_for('admin_new_module'))
-        
+
         title = request.form.get('title')
         description = request.form.get('description')
         video_url = request.form.get('video_url')
         content = request.form.get('content')
-        
+
         if not title:
             flash('Title is required', 'error')
             return redirect(url_for('admin_new_module'))
-        
+
         # Generate unique module ID
         module_id = str(uuid.uuid4())
-        
+
         # Create module data
         module_data = {
             'id': module_id,
@@ -1275,19 +1288,19 @@ def admin_new_module():
             'created_at': datetime.now().isoformat(),
             'order': 0
         }
-        
+
         # Add module to courses data first (this creates the module in database)
         courses_data = load_courses()
         courses_data['modules'].append(module_data)
         save_courses(courses_data)
-        
+
         # Save module content to database (after module exists)
         if content:
             save_module_content(module_id, content)
-        
+
         flash('Module created successfully', 'success')
         return redirect(url_for('admin_dashboard'))
-    
+
     config = load_config()
     return render_template('admin/module_form.html', 
                          config=config,
@@ -1299,36 +1312,36 @@ def admin_new_module():
 def admin_edit_module(module_id):
     courses_data = load_courses()
     module = None
-    
+
     for m in courses_data.get('modules', []):
         if m['id'] == module_id:
             module = m
             break
-    
+
     if not module:
         flash('Module not found', 'error')
         return redirect(url_for('admin_dashboard'))
-    
+
     if request.method == 'POST':
         if not validate_csrf_token():
             flash('Invalid CSRF token', 'error')
             return redirect(url_for('admin_edit_module', module_id=module_id))
-        
+
         module['title'] = request.form.get('title', module['title'])
         module['description'] = request.form.get('description', module['description'])
         module['video_url'] = request.form.get('video_url', module.get('video_url', ''))
-        
+
         # Only save content if the form includes the content field
         if 'content' in request.form:
             save_module_content(module_id, request.form.get('content', ''))
-        
+
         save_courses(courses_data)
         flash('Module updated successfully', 'success')
         return redirect(url_for('admin_dashboard'))
-    
+
     # Load module content from database
     module['content'] = load_module_content(module_id) or ''
-    
+
     config = load_config()
     return render_template('admin/module_form.html', 
                          config=config,
@@ -1340,13 +1353,13 @@ def admin_edit_module(module_id):
 def admin_delete_module(module_id):
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     courses_data = load_courses()
     courses_data['modules'] = [m for m in courses_data['modules'] if m['id'] != module_id]
     save_courses(courses_data)
-    
+
     # Content is automatically deleted by the database foreign key constraint
-    
+
     return jsonify({'success': True})
 
 @app.route('/admin/config', methods=['POST'])
@@ -1354,25 +1367,25 @@ def admin_delete_module(module_id):
 def admin_update_config():
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     data = request.get_json()
     config = load_config()
-    
+
     # Update basic configuration
     for key, value in data.items():
         if key in ['site_title', 'site_description', 'admin_passcode']:
             config[key] = value
-    
+
     # Update header customization with validation
     if 'header_customization' in data:
         if 'header_customization' not in config:
             config['header_customization'] = {}
-        
+
         header_data = data['header_customization']
-        
+
         # Validate and sanitize header values
         validated_header = {}
-        
+
         # Color validation (hex colors only)
         import re
         hex_color_pattern = r'^#[0-9A-Fa-f]{6}$'
@@ -1381,7 +1394,7 @@ def admin_update_config():
                 color_value = str(header_data[color_key])
                 if re.match(hex_color_pattern, color_value):
                     validated_header[color_key] = color_value
-        
+
         # Size validation (rem units only)
         size_pattern = r'^\d+(\.\d+)?rem$'
         for size_key in ['title_size', 'nav_text_size']:
@@ -1389,21 +1402,21 @@ def admin_update_config():
                 size_value = str(header_data[size_key])
                 if re.match(size_pattern, size_value):
                     validated_header[size_key] = size_value
-        
+
         # Boolean validation
         if 'show_emoji' in header_data:
             validated_header['show_emoji'] = bool(header_data['show_emoji'])
-        
+
         # Emoji validation (limited length and basic sanitization)
         if 'custom_emoji' in header_data:
             emoji_value = str(header_data['custom_emoji'])
             # Limit to 4 characters and strip any HTML/script-like content
             if len(emoji_value) <= 4 and not any(char in emoji_value for char in ['<', '>', '"', "'", '&']):
                 validated_header['custom_emoji'] = emoji_value
-        
+
         # Update config with validated values only
         config['header_customization'].update(validated_header)
-    
+
     save_config(config)
     return jsonify({'success': True})
 
@@ -1412,13 +1425,13 @@ def admin_update_config():
 def admin_reorder_modules():
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     data = request.get_json()
     module_order = data.get('module_order', [])
-    
+
     courses_data = load_courses()
     modules = courses_data.get('modules', [])
-    
+
     # Reorder modules based on provided order
     reordered_modules = []
     for module_id in module_order:
@@ -1427,10 +1440,10 @@ def admin_reorder_modules():
                 module['order'] = len(reordered_modules)
                 reordered_modules.append(module)
                 break
-    
+
     courses_data['modules'] = reordered_modules
     save_courses(courses_data)
-    
+
     return jsonify({'success': True})
 
 @app.route('/admin/upload-image', methods=['POST'])
@@ -1438,35 +1451,35 @@ def admin_reorder_modules():
 def admin_upload_image():
     # Check if request is from CKEditor (different field name and CSRF handling)
     is_ckeditor = 'upload' in request.files
-    
+
     if not is_ckeditor and not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     # Handle different field names for different upload sources
     file_field = 'upload' if is_ckeditor else 'image'
-    
+
     if file_field not in request.files:
         error_response = {'error': {'message': 'No image file'}} if is_ckeditor else {'error': 'No image file'}
         return jsonify(error_response), 400
-    
+
     file = request.files[file_field]
     if not file.filename or file.filename == '':
         error_response = {'error': {'message': 'No file selected'}} if is_ckeditor else {'error': 'No file selected'}
         return jsonify(error_response), 400
-    
+
     if file and file.filename and file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
         filename = secure_filename(file.filename)
         filename = f"{uuid.uuid4()}_{filename}"
         filepath = os.path.join('static/resources', filename)
-        
+
         # Get crop and resize parameters
         crop_mode = request.form.get('crop_mode', 'smart')  # smart, center, square
         max_width = int(request.form.get('max_width', 800))
         max_height = int(request.form.get('max_height', 600))
-        
+
         try:
             image = Image.open(file.stream)
-            
+
             # Apply cropping based on mode
             if crop_mode == 'square':
                 # Crop to square aspect ratio
@@ -1480,7 +1493,7 @@ def admin_upload_image():
                 # Crop to center with target aspect ratio
                 target_ratio = max_width / max_height
                 current_ratio = image.width / image.height
-                
+
                 if current_ratio > target_ratio:
                     # Image is wider, crop width
                     new_width = int(image.height * target_ratio)
@@ -1491,11 +1504,11 @@ def admin_upload_image():
                     new_height = int(image.width / target_ratio)
                     top = (image.height - new_height) // 2
                     image = image.crop((0, top, image.width, top + new_height))
-            
+
             # Resize while maintaining aspect ratio if needed
             if image.width > max_width or image.height > max_height:
                 image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            
+
             # Convert to RGB if needed (for JPEG)
             if image.mode in ('RGBA', 'LA', 'P'):
                 background = Image.new('RGB', image.size, (255, 255, 255))
@@ -1503,11 +1516,11 @@ def admin_upload_image():
                     image = image.convert('RGBA')
                 background.paste(image, mask=image.split()[-1] if 'A' in image.mode else None)
                 image = background
-            
+
             image.save(filepath, 'JPEG', quality=85, optimize=True)
-            
+
             image_url = url_for('static', filename=f'resources/{filename}')
-            
+
             # Return different response format for CKEditor vs regular upload
             if is_ckeditor:
                 return jsonify({'url': image_url})
@@ -1519,7 +1532,7 @@ def admin_upload_image():
         except Exception as e:
             error_response = {'error': {'message': f'Error processing image: {str(e)}'}} if is_ckeditor else {'error': f'Error processing image: {str(e)}'}
             return jsonify(error_response), 500
-    
+
     error_response = {'error': {'message': 'Invalid file type'}} if is_ckeditor else {'error': 'Invalid file type'}
     return jsonify(error_response), 400
 
@@ -1528,15 +1541,15 @@ def admin_upload_image():
 def admin_export_data():
     import zipfile
     import io
-    
+
     # Create ZIP file in memory
     zip_buffer = io.BytesIO()
-    
+
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         # Export configuration and data from database to JSON files for backup
         # Note: Configuration and data are now stored in SQLite database
         # This export creates temporary JSON files for backup compatibility
-        
+
         # Add module content files
         module_dir = 'data/modules'
         if os.path.exists(module_dir):
@@ -1544,7 +1557,7 @@ def admin_export_data():
                 filepath = os.path.join(module_dir, filename)
                 if os.path.isfile(filepath):
                     zip_file.write(filepath, filepath)
-        
+
         # Add static resources
         resources_dir = 'static/resources'
         if os.path.exists(resources_dir):
@@ -1552,9 +1565,9 @@ def admin_export_data():
                 filepath = os.path.join(resources_dir, filename)
                 if os.path.isfile(filepath):
                     zip_file.write(filepath, filepath)
-    
+
     zip_buffer.seek(0)
-    
+
     return send_file(
         io.BytesIO(zip_buffer.read()),
         mimetype='application/zip',
@@ -1579,7 +1592,7 @@ def admin_new_certificate_template():
         if not validate_csrf_token():
             flash('Invalid CSRF token', 'error')
             return redirect(url_for('admin_new_certificate_template'))
-        
+
         template_data = {
             'name': request.form.get('name'),
             'title': request.form.get('title'),
@@ -1598,15 +1611,15 @@ def admin_new_certificate_template():
             'text_color': request.form.get('text_color', '#000000'),
             'is_default': bool(request.form.get('is_default'))
         }
-        
+
         if not template_data['name'] or not template_data['title']:
             flash('Name and title are required', 'error')
             return redirect(url_for('admin_new_certificate_template'))
-        
+
         save_certificate_template(template_data)
         flash('Certificate template created successfully', 'success')
         return redirect(url_for('admin_certificate_templates'))
-    
+
     config = load_config()
     return render_template('admin/certificate_template_form.html', 
                          config=config,
@@ -1617,16 +1630,16 @@ def admin_new_certificate_template():
 @require_admin
 def admin_edit_certificate_template(template_id):
     template = get_certificate_template(template_id)
-    
+
     if not template:
         flash('Certificate template not found', 'error')
         return redirect(url_for('admin_certificate_templates'))
-    
+
     if request.method == 'POST':
         if not validate_csrf_token():
             flash('Invalid CSRF token', 'error')
             return redirect(url_for('admin_edit_certificate_template', template_id=template_id))
-        
+
         template_data = {
             'id': template_id,
             'name': request.form.get('name'),
@@ -1646,15 +1659,15 @@ def admin_edit_certificate_template(template_id):
             'text_color': request.form.get('text_color', '#000000'),
             'is_default': bool(request.form.get('is_default'))
         }
-        
+
         if not template_data['name'] or not template_data['title']:
             flash('Name and title are required', 'error')
             return redirect(url_for('admin_edit_certificate_template', template_id=template_id))
-        
+
         save_certificate_template(template_data)
         flash('Certificate template updated successfully', 'success')
         return redirect(url_for('admin_certificate_templates'))
-    
+
     config = load_config()
     return render_template('admin/certificate_template_form.html', 
                          config=config,
@@ -1666,9 +1679,9 @@ def admin_edit_certificate_template(template_id):
 def admin_delete_certificate_template(template_id):
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     success, message = delete_certificate_template(template_id)
-    
+
     if success:
         return jsonify({'success': True})
     else:
@@ -1679,16 +1692,16 @@ def admin_delete_certificate_template(template_id):
 def admin_set_default_certificate_template(template_id):
     if not validate_csrf_token():
         return jsonify({'error': 'Invalid CSRF token'}), 403
-    
+
     template = get_certificate_template(template_id)
-    
+
     if not template:
         return jsonify({'error': 'Template not found'}), 404
-    
+
     # Update template to set as default
     template['is_default'] = 1
     save_certificate_template(template)
-    
+
     return jsonify({'success': True})
 
 if __name__ == '__main__':
