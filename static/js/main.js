@@ -475,13 +475,9 @@ function downloadCertificate(moduleId) {
     // Generate certificate URL with name parameter
     const url = `/certificate/${moduleId}?name=${encodeURIComponent(fullName)}`;
 
-    // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('certificateModal'));
-    modal.hide();
-
-    // Clear the form
-    document.getElementById('fullName').value = '';
-
     // Open certificate in new window/tab
     window.open(url, '_blank');
+
+    // Clear the form after successful download
+    document.getElementById('fullName').value = '';
 }
